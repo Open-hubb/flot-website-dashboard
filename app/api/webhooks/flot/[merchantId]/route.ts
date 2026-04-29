@@ -100,14 +100,6 @@ export async function POST(
                     <td style="color:#888;font-size:13px;padding:4px 0">Order ID</td>
                     <td style="font-size:13px;font-weight:600;text-align:right">#${orderId}</td>
                   </tr>
-                  ${amountDisplay ? `<tr>
-                    <td style="color:#888;font-size:13px;padding:4px 0">Amount</td>
-                    <td style="font-size:13px;font-weight:600;text-align:right">${amountDisplay}</td>
-                  </tr>` : ""}
-                  ${paymentType ? `<tr>
-                    <td style="color:#888;font-size:13px;padding:4px 0">Payment type</td>
-                    <td style="font-size:13px;font-weight:600;text-align:right;text-transform:capitalize">${paymentType}</td>
-                  </tr>` : ""}
                 </table>
               </div>
               <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://flot-dashboard.vercel.app"}/transactions"
