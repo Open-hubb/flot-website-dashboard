@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { Loader2, Mail, Trash2, Copy, Check, Link as LinkIcon, KeyRound } from "lucide-react"
+import { Loader2, Mail, Trash2, Copy, Check, KeyRound } from "lucide-react"
 import {
   Dialog,
   DialogContent,
