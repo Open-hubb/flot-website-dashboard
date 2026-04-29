@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Plus } from "lucide-react"
-import { ResendInviteButton, DeleteMerchantButton, CopyValue } from "./merchant-actions"
+import { ResendInviteButton, DeleteMerchantButton, WebhookCredentialsButton } from "./merchant-actions"
 
 export default async function MerchantsPage() {
   await requireAdmin()
@@ -53,22 +53,20 @@ export default async function MerchantsPage() {
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Orders</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Joined</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Webhook Credentials</th>
               <th className="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {merchants.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
                   No merchants yet. Invite one to get started.
                 </td>
               </tr>
             ) : (
               merchants.map((m) => {
                 const invitePending = !!m.inviteToken
-                const inviteExpired =
-                  m.inviteExpiry && m.inviteExpiry < new Date()
+                const inviteExpired = m.inviteExpiry && m.inviteExpiry < new Date()
 
                 return (
                   <tr key={m.id}>
@@ -98,13 +96,12 @@ export default async function MerchantsPage() {
                       {formatDateTime(m.createdAt)}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex flex-col gap-1 text-xs font-mono text-muted-foreground">
-                        <CopyValue label="User" value={m.webhookUsername} />
-                        <CopyValue label="Pass" value={m.webhookPassword} />
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-2">
+                        <WebhookCredentialsButton
+                          username={m.webhookUsername}
+                          password={m.webhookPassword}
+                          flotMerchantId={m.flotMerchantId}
+                        />
                         <ResendInviteButton merchantId={m.id} email={m.email} />
                         <DeleteMerchantButton merchantId={m.id} businessName={m.businessName} />
                       </div>
