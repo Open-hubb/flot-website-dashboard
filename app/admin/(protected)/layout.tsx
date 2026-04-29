@@ -27,7 +27,7 @@ export default async function AdminProtectedLayout({ children }: { children: Rea
         </div>
         <AdminSignOut />
       </header>
-      <main className="p-6 max-w-5xl mx-auto">{children}</main>
+      <main className="p-6 max-w-7xl mx-auto">{children}</main>
     </div>
   )
 }

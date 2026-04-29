@@ -44,8 +44,8 @@ export default async function MerchantsPage() {
         </Link>
       </div>
 
-      <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
+        <table className="w-full min-w-[900px] text-sm">
           <thead>
             <tr className="border-b bg-muted/40">
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Merchant</th>
