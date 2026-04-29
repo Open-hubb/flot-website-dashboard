@@ -138,23 +138,20 @@ export default async function WebsiteAnalyticsPage({
         </div>
       </div>
 
-      {/* Integration note */}
-      <div className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
-        <p className="font-medium text-foreground">Track page views on your website</p>
-        <p className="mt-1">
-          Add this fetch call to your website pages to track visits:
-        </p>
-        <pre className="mt-2 overflow-x-auto rounded bg-background px-3 py-2 text-xs">
-{`fetch("https://your-dashboard.com/api/public/track", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    merchantId: "${(session.user as any).flotMerchantId}",
-    page: window.location.pathname,
-    referrer: document.referrer,
-  }),
-})`}
+      {/* Integration snippet */}
+      <div className="rounded-lg border bg-card p-6 shadow-sm space-y-3">
+        <div>
+          <p className="font-semibold">Add tracking to your website</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Paste this single line into the <code className="text-xs bg-muted px-1 py-0.5 rounded">&lt;head&gt;</code> of every page on your website. No other setup needed.
+          </p>
+        </div>
+        <pre className="overflow-x-auto rounded-lg bg-muted px-4 py-3 text-xs leading-relaxed">
+{`<script src="https://flot-dashboard.vercel.app/api/public/tracker.js?id=${session.user.flotMerchantId}" async></script>`}
         </pre>
+        <p className="text-xs text-muted-foreground">
+          Page views and referrers will appear in this dashboard within seconds of each visit.
+        </p>
       </div>
     </div>
   )
