@@ -13,9 +13,11 @@ import {
 interface RevenueChartProps {
   data: { date: string; amount: number }[]
   currency?: string
+  label?: string
 }
 
-export function RevenueChart({ data, currency = "SLE" }: RevenueChartProps) {
+export function RevenueChart({ data, currency = "SLE", label }: RevenueChartProps) {
+  const isCurrency = !label
   const currencySymbol = currency === "USD" ? "$" : "Le"
 
   return (
@@ -38,11 +40,15 @@ export function RevenueChart({ data, currency = "SLE" }: RevenueChartProps) {
           tick={{ fontSize: 12, fill: "#888" }}
           axisLine={false}
           tickLine={false}
-          tickFormatter={(v) => `${currencySymbol}${(v / 1000).toFixed(0)}k`}
+          tickFormatter={(v) =>
+            isCurrency ? `${currencySymbol}${(v / 1000).toFixed(0)}k` : `${v}`
+          }
         />
         <Tooltip
           formatter={(value) =>
-            [`${currencySymbol}${Number(value).toLocaleString()}`, "Revenue"]
+            isCurrency
+              ? [`${currencySymbol}${Number(value).toLocaleString()}`, "Revenue"]
+              : [Number(value).toLocaleString(), label ?? "Visits"]
           }
           contentStyle={{
             borderRadius: "8px",

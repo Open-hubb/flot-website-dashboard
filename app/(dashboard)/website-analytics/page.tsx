@@ -111,7 +111,7 @@ export default async function WebsiteAnalyticsPage({
       <div className="rounded-xl border bg-card p-6 shadow-sm">
         <h2 className="mb-1 text-base font-semibold">Page Views Trend</h2>
         <p className="mb-4 text-sm text-muted-foreground">Daily page views over the last {days} days</p>
-        <RevenueChart data={chartData} />
+        <RevenueChart data={chartData} label="Visits" />
       </div>
 
       {/* Top pages */}
