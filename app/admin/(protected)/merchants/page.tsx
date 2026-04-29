@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Plus } from "lucide-react"
-import { ResendInviteButton, DeleteMerchantButton, WebhookCredentialsButton } from "./merchant-actions"
+import { ResendInviteButton, DeleteMerchantButton, WebhookCredentialsButton, SanityUrlButton } from "./merchant-actions"
 
 export default async function MerchantsPage() {
   await requireAdmin()
@@ -21,6 +21,7 @@ export default async function MerchantsPage() {
       flotMerchantId: true,
       webhookUsername: true,
       webhookPassword: true,
+      sanityStudioUrl: true,
       inviteToken: true,
       inviteExpiry: true,
       createdAt: true,
@@ -102,6 +103,12 @@ export default async function MerchantsPage() {
                           password={m.webhookPassword}
                           flotMerchantId={m.flotMerchantId}
                         />
+                        {m.type === "WEBSITE" && (
+                          <SanityUrlButton
+                            merchantId={m.id}
+                            currentUrl={m.sanityStudioUrl ?? ""}
+                          />
+                        )}
                         <ResendInviteButton merchantId={m.id} email={m.email} />
                         <DeleteMerchantButton merchantId={m.id} businessName={m.businessName} />
                       </div>

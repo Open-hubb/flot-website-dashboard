@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { Loader2, Mail, Trash2, Copy, Check, KeyRound } from "lucide-react"
+import { Loader2, Mail, Trash2, Copy, Check, KeyRound, Layers } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -81,6 +81,79 @@ export function WebhookCredentialsButton({
         </div>
 
         <DialogFooter showCloseButton />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export function SanityUrlButton({
+  merchantId,
+  currentUrl,
+}: {
+  merchantId: string
+  currentUrl: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [url, setUrl] = useState(currentUrl)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const router = useRouter()
+
+  async function handleSave() {
+    setSaving(true)
+    await fetch(`/api/admin/merchants/${merchantId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sanityStudioUrl: url }),
+    })
+    setSaving(false)
+    setSaved(true)
+    router.refresh()
+    setTimeout(() => { setSaved(false); setOpen(false) }, 1200)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <button
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+      >
+        <Layers className="h-3.5 w-3.5" />
+        Sanity
+      </button>
+
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Sanity Studio URL</DialogTitle>
+          <DialogDescription>
+            Set the Sanity Studio URL for this merchant. It will appear as the link on their CMS and Products pages.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-2 py-1">
+          <label className="text-xs font-medium text-muted-foreground">Studio URL</label>
+          <input
+            type="url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://your-merchant-site.com/studio"
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+          <p className="text-xs text-muted-foreground">
+            This is typically <code className="bg-muted px-1 rounded">https://merchant-site.com/studio</code> if embedded in their Next.js site.
+          </p>
+        </div>
+
+        <DialogFooter>
+          <button
+            onClick={handleSave}
+            disabled={saving || saved}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors"
+          >
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : saved ? <Check className="h-3.5 w-3.5" /> : null}
+            {saved ? "Saved!" : saving ? "Saving…" : "Save"}
+          </button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

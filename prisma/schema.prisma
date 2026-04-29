@@ -15,8 +15,9 @@ model Merchant {
   businessName    String
   type            MerchantType @default(QR_ONLY)
   flotMerchantId  String    @unique
-  webhookUsername String    @default("")
-  webhookPassword String    @default("")
+  webhookUsername  String    @default("")
+  webhookPassword  String    @default("")
+  sanityStudioUrl  String?
   inviteToken     String?   @unique
   inviteExpiry    DateTime?
   createdAt       DateTime  @default(now())
