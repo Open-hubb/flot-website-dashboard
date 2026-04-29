@@ -3,7 +3,25 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { Loader2, Mail, Trash2 } from "lucide-react"
+import { Loader2, Mail, Trash2, Copy, Check } from "lucide-react"
+
+export function CopyValue({ label, value }: { label: string; value: string }) {
+  const [copied, setCopied] = useState(false)
+  function copy() {
+    navigator.clipboard.writeText(value)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <button onClick={copy} className="flex items-center gap-1 hover:text-foreground transition-colors group">
+      <span className="text-muted-foreground/60">{label}:</span>
+      <span className="truncate max-w-[120px]">{value || "—"}</span>
+      {copied
+        ? <Check className="h-3 w-3 text-green-500 shrink-0" />
+        : <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 shrink-0" />}
+    </button>
+  )
+}
 
 export function ResendInviteButton({ merchantId, email }: { merchantId: string; email: string }) {
   const [loading, setLoading] = useState(false)

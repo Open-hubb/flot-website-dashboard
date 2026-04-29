@@ -15,10 +15,17 @@ export async function POST(
 ) {
   const merchant = await db.merchant.findUnique({
     where: { flotMerchantId: params.merchantId },
-    select: { id: true, email: true, name: true, businessName: true },
+    select: { id: true, email: true, name: true, businessName: true, webhookUsername: true, webhookPassword: true },
   })
 
   if (!merchant) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+  // Verify Basic Auth sent by Flot backend
+  const authHeader = req.headers.get("authorization") ?? ""
+  const expected = `Basic ${Buffer.from(`${merchant.webhookUsername}:${merchant.webhookPassword}`).toString("base64")}`
+  if (merchant.webhookUsername && authHeader !== expected) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
 
   const body = await req.json().catch(() => null)
   const parsed = payloadSchema.safeParse(body)

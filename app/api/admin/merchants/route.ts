@@ -29,7 +29,9 @@ export async function POST(req: NextRequest) {
   }
 
   const inviteToken = randomBytes(32).toString("hex")
-  const inviteExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+  const inviteExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  const webhookUsername = `flot_${flotMerchantId}`
+  const webhookPassword = randomBytes(20).toString("hex")
 
   const merchant = await db.merchant.create({
     data: {
@@ -41,6 +43,8 @@ export async function POST(req: NextRequest) {
       passwordHash: "INVITE_PENDING",
       inviteToken,
       inviteExpiry,
+      webhookUsername,
+      webhookPassword,
     },
   })
 
