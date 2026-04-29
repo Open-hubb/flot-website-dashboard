@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Merchant {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String
+  name            String
+  businessName    String
+  type            MerchantType @default(QR_ONLY)
+  flotMerchantId  String    @unique
+  webhookUsername String    @default("")
+  webhookPassword String    @default("")
+  inviteToken     String?   @unique
+  inviteExpiry    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  orders              Order[]
+  notifications       InAppNotification[]
+  notifPrefs          NotificationPrefs?
+  analyticsEvents     WebsiteAnalyticsEvent[]
+}
+
+// Populated by incoming Flot webhooks.
+// Flot sends each webhook ONCE — stored immediately on receipt.
+model Order {
+  id            String      @id @default(cuid())
+  merchantId    String
+  merchant      Merchant    @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  orderId       String      @unique
+  flotRequestId String      @unique
+  status        OrderStatus @default(PENDING)
+  paymentType   String?
+  amount        Decimal?    @db.Decimal(18, 2)
+  currency      String?
+  rawPayload    Json
+  receivedAt    DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([merchantId])
+  @@index([status])
+  @@index([receivedAt])
+}
+
+model NotificationPrefs {
+  id            String   @id @default(cuid())
+  merchantId    String   @unique
+  merchant      Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  emailDigest   Boolean  @default(true)
+  digestFreq    String   @default("DAILY")
+  newOrderAlert Boolean  @default(true)
+}
+
+model InAppNotification {
+  id         String   @id @default(cuid())
+  merchantId String
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  type       String
+  title      String
+  body       String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([merchantId, read])
+}
+
+// Lightweight page view tracker — merchant websites POST to /api/public/track
+model WebsiteAnalyticsEvent {
+  id         String   @id @default(cuid())
+  merchantId String
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  page       String
+  referrer   String?
+  createdAt  DateTime @default(now())
+
+  @@index([merchantId, createdAt])
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum MerchantType {
+  QR_ONLY
+  WEBSITE
+}
