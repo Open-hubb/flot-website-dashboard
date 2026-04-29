@@ -2,15 +2,11 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { Resend } from "resend"
 import { z } from "zod"
-import { formatCurrency } from "@/lib/format"
 
 const payloadSchema = z.object({
   orderId: z.string(),
   flotRequestId: z.string(),
   status: z.enum(["completed", "failed"]),
-  amount: z.number().optional(),
-  currency: z.string().optional(),
-  paymentType: z.string().optional(),
 })
 
 export async function POST(
@@ -30,26 +26,37 @@ export async function POST(
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 })
   }
 
-  const { orderId, flotRequestId, status, amount, currency, paymentType } = parsed.data
-  const dbStatus = status === "completed" ? "COMPLETED" : "FAILED"
-
-  await db.order.upsert({
-    where: { flotRequestId },
-    update: { status: dbStatus },
-    create: {
-      merchantId: merchant.id,
-      orderId,
-      flotRequestId,
-      status: dbStatus,
-      amount: amount ?? null,
-      currency: currency ?? "SLE",
-      paymentType: paymentType ?? null,
-      rawPayload: body,
-    },
-  })
+  const { orderId, flotRequestId, status } = parsed.data
 
   if (status === "completed") {
-    const amountDisplay = amount ? formatCurrency(amount, currency ?? "SLE") : ""
+    await db.order.upsert({
+      where: { flotRequestId },
+      update: { status: "COMPLETED" },
+      create: {
+        merchantId: merchant.id,
+        orderId,
+        flotRequestId,
+        status: "COMPLETED",
+        rawPayload: body,
+      },
+    })
+  } else {
+    // failed = customer can retry, leave as PENDING
+    await db.order.upsert({
+      where: { flotRequestId },
+      update: { status: "PENDING" },
+      create: {
+        merchantId: merchant.id,
+        orderId,
+        flotRequestId,
+        status: "PENDING",
+        rawPayload: body,
+      },
+    })
+  }
+
+  if (status === "completed") {
+    const amountDisplay = ""
 
     await db.inAppNotification.create({
       data: {

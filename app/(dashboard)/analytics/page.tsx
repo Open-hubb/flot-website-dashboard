@@ -59,9 +59,6 @@ export default async function AnalyticsPage({
     date, completed, pending, failed,
   }))
 
-  const periodRevenue = orders
-    .filter((o) => o.status === "COMPLETED")
-    .reduce((sum, o) => sum + Number(o.amount ?? 0), 0)
   const periodCompleted = orders.filter((o) => o.status === "COMPLETED").length
   const periodPending = orders.filter((o) => o.status === "PENDING").length
   const periodFailed = orders.filter((o) => o.status === "FAILED").length
@@ -89,9 +86,9 @@ export default async function AnalyticsPage({
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          title={`Revenue (${validDays}d)`}
-          value={formatCurrency(periodRevenue)}
-          subtitle="Completed payments"
+          title={`Completed (${validDays}d)`}
+          value={periodCompleted.toString()}
+          subtitle="Successful payments"
           icon={TrendingUp}
         />
         <StatCard
@@ -136,12 +133,6 @@ export default async function AnalyticsPage({
       <div className="rounded-xl border bg-card p-6 shadow-sm">
         <h2 className="mb-4 text-base font-semibold">All-Time Summary</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <div>
-            <p className="text-sm text-muted-foreground">Total Revenue</p>
-            <p className="mt-1 text-2xl font-bold">
-              {formatCurrency(Number(allTime._sum.amount ?? 0))}
-            </p>
-          </div>
           <div>
             <p className="text-sm text-muted-foreground">Completed Orders</p>
             <p className="mt-1 text-2xl font-bold">{allTime._count}</p>

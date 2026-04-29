@@ -3,7 +3,7 @@ import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { RevenueChart } from "@/components/charts/revenue-chart"
-import { formatCurrency, formatDateTime } from "@/lib/format"
+import { formatDateTime } from "@/lib/format"
 import { ArrowLeftRight, CheckCircle, Clock, TrendingUp } from "lucide-react"
 import { subDays, startOfDay, format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
@@ -78,17 +78,16 @@ export default async function OverviewPage() {
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total Revenue"
-          value={formatCurrency(currentRevenue)}
-          subtitle="All completed payments"
-          icon={TrendingUp}
-          trend={trendPct ? { value: `${trendPct}%`, positive: Number(trendPct) >= 0 } : undefined}
+          title="Completed Payments"
+          value={allOrders._count.toString()}
+          subtitle="All time"
+          icon={CheckCircle}
         />
         <StatCard
-          title="Total Orders"
-          value={allOrders._count.toString()}
-          subtitle="Completed transactions"
-          icon={CheckCircle}
+          title="Last 30 Days"
+          value={last30DaysOrders.length.toString()}
+          subtitle="Completed payments"
+          icon={TrendingUp}
         />
         <StatCard
           title="Pending"
