@@ -16,7 +16,7 @@ export async function sendInviteEmail({
   const inviteUrl = `${appUrl}/set-password?token=${token}`
 
   const result = await resend.emails.send({
-    from: "Flot <noreply@flotme.ai>",
+    from: process.env.FROM_EMAIL ?? "Flot <noreply@flotme.ai>",
     to: email,
     subject: "You've been invited to the Flot Merchant Dashboard",
     html: `

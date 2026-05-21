@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
 
     try {
       await resend.emails.send({
-        from: "Flot <noreply@flotme.ai>",
+        from: process.env.FROM_EMAIL ?? "Flot <noreply@flotme.ai>",
         to: merchant.email,
         subject: `Your ${isWeekly ? "weekly" : "daily"} Flot summary — ${merchant.businessName}`,
         html: `

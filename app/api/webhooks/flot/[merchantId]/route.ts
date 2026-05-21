@@ -100,7 +100,7 @@ export async function POST(
       try {
         const resend = new Resend(process.env.RESEND_API_KEY)
         await resend.emails.send({
-          from: "Flot <noreply@flotme.ai>",
+          from: process.env.FROM_EMAIL ?? "Flot <noreply@flotme.ai>",
           to: merchant.email,
           subject: `Payment received${amountDisplay ? ` — ${amountDisplay}` : ""}`,
           html: `
