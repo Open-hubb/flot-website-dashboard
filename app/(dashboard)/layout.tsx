@@ -54,9 +54,12 @@ function getPageTitle(pathname: string): string {
     "/orders": "Orders",
     "/products": "Products",
     "/cms": "Website CMS",
+    "/cms/media": "Media Library",
     "/website-analytics": "Website Analytics",
     "/notifications": "Notifications",
     "/settings": "Settings",
   }
-  return map[pathname] ?? "Dashboard"
+  if (map[pathname]) return map[pathname]
+  if (pathname.startsWith("/cms/") && pathname !== "/cms/media") return "Edit Page"
+  return "Dashboard"
 }

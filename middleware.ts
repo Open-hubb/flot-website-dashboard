@@ -12,6 +12,7 @@ export default withAuth(
         const isPublic =
           pathname.startsWith("/login") ||
           pathname.startsWith("/set-password") ||
+          pathname.startsWith("/site") ||
           pathname.startsWith("/api/public") ||
           pathname.startsWith("/api/webhooks") ||
           pathname.startsWith("/api/debug") ||

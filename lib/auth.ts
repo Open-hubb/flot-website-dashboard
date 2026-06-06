@@ -5,7 +5,7 @@ import { db } from "@/lib/db"
 import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   providers: [

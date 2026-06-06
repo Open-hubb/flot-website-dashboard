@@ -28,6 +28,8 @@ model Merchant {
   notifications       InAppNotification[]
   notifPrefs          NotificationPrefs?
   analyticsEvents     WebsiteAnalyticsEvent[]
+  cmsPages            CmsPage[]
+  cmsMedia            CmsMedia[]
 }
 
 // Populated by incoming Flot webhooks.
@@ -121,4 +123,38 @@ enum CustomerOrderStatus {
 enum MerchantType {
   QR_ONLY
   WEBSITE
+}
+
+model CmsPage {
+  id               String        @id @default(cuid())
+  merchantId       String
+  merchant         Merchant      @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  slug             String
+  title            String
+  draftContent     Json
+  publishedContent Json?
+  status           CmsPageStatus @default(DRAFT)
+  updatedAt        DateTime      @updatedAt
+  publishedAt      DateTime?
+
+  @@unique([merchantId, slug])
+  @@index([merchantId])
+}
+
+model CmsMedia {
+  id         String   @id @default(cuid())
+  merchantId String
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  url        String
+  filename   String
+  type       String
+  size       Int
+  createdAt  DateTime @default(now())
+
+  @@index([merchantId])
+}
+
+enum CmsPageStatus {
+  DRAFT
+  PUBLISHED
 }
