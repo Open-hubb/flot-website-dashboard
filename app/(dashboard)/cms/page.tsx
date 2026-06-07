@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
-import { Lock, FileText, Image, ChevronRight, CheckCircle2, Clock } from "lucide-react"
+import { Lock, FileText, Image as ImageIcon, ChevronRight, CheckCircle2, Clock } from "lucide-react"
 import { DEFAULT_PAGES } from "@/lib/cms-types"
 import { formatDateTime } from "@/lib/format"
 import Link from "next/link"
@@ -70,7 +70,7 @@ export default async function CmsPage() {
           <div className="rounded-xl border bg-card p-5 shadow-sm group-hover:border-primary/40 transition-colors">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/10">
-                <Image className="h-5 w-5 text-violet-600" />
+                <ImageIcon className="h-5 w-5 text-violet-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{mediaCount}</p>

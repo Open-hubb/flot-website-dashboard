@@ -149,6 +149,7 @@ export function MediaLibrary({ initialMedia }: { initialMedia: MediaItem[] }) {
                   }`}
                 >
                   <div className="aspect-square">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={item.url}
                       alt={item.filename}
@@ -168,6 +169,7 @@ export function MediaLibrary({ initialMedia }: { initialMedia: MediaItem[] }) {
         {/* Detail panel */}
         {selected && (
           <div className="w-72 shrink-0 rounded-xl border bg-card shadow-sm p-4 space-y-4 self-start sticky top-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={selected.url}
               alt={selected.filename}

@@ -353,6 +353,9 @@ function ImageField({
       </div>
       {value && (
         <div className="mt-2 relative w-full max-w-xs">
+          {/* Merchants paste arbitrary image URLs; next/image domain allow-listing
+              doesn't apply, so a plain <img> is intentional here. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={value}
             alt=""
@@ -377,6 +380,7 @@ function ImageField({
                   onClick={() => onChange(onSelectMedia(m.url))}
                   className="group relative rounded-md overflow-hidden border hover:ring-2 hover:ring-primary"
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={m.url}
                     alt={m.filename}
