@@ -3,6 +3,7 @@ import { db } from "@/lib/db"
 import { Resend } from "resend"
 import { z } from "zod"
 import { safeEqual } from "@/lib/crypto"
+import { APP_URL } from "@/lib/app-url"
 
 const payloadSchema = z.object({
   orderId: z.string(),
@@ -126,7 +127,7 @@ export async function POST(
                   </tr>
                 </table>
               </div>
-              <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://flot-dashboard.vercel.app"}/transactions"
+              <a href="${APP_URL}/transactions"
                  style="display:inline-block;background:#80ffdd;color:#111;font-weight:600;padding:12px 24px;border-radius:8px;text-decoration:none">
                 View transactions
               </a>

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { Lock, Globe, Eye, TrendingUp } from "lucide-react"
 import { subDays, format } from "date-fns"
 import { RevenueChart } from "@/components/charts/revenue-chart"
+import { APP_URL } from "@/lib/app-url"
 
 export default async function WebsiteAnalyticsPage({
   searchParams,
@@ -147,7 +148,7 @@ export default async function WebsiteAnalyticsPage({
           </p>
         </div>
         <pre className="overflow-x-auto rounded-lg bg-muted px-4 py-3 text-xs leading-relaxed">
-{`<script src="https://flot-dashboard.vercel.app/api/public/tracker.js?id=${session.user.flotMerchantId}" async></script>`}
+{`<script src="${APP_URL}/api/public/tracker.js?id=${session.user.flotMerchantId}" async></script>`}
         </pre>
         <p className="text-xs text-muted-foreground">
           Page views and referrers will appear in this dashboard within seconds of each visit.

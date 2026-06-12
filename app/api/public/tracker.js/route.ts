@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { APP_URL } from "@/lib/app-url"
 
 export async function GET(req: NextRequest) {
   const merchantId = req.nextUrl.searchParams.get("id") ?? ""
@@ -8,7 +9,7 @@ export async function GET(req: NextRequest) {
   var mid = ${JSON.stringify(merchantId)};
   if (!mid) return;
   try {
-    fetch("https://flot-dashboard.vercel.app/api/public/track", {
+    fetch("${APP_URL}/api/public/track", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

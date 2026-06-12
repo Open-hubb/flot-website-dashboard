@@ -3,6 +3,7 @@ import { db } from "@/lib/db"
 import { Resend } from "resend"
 import { formatCurrency } from "@/lib/format"
 import { subDays } from "date-fns"
+import { APP_URL } from "@/lib/app-url"
 
 export const runtime = "nodejs"
 
@@ -83,7 +84,7 @@ export async function GET(req: NextRequest) {
                 </tr>
               </table>
             </div>
-            <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://flot-dashboard.vercel.app"}/analytics"
+            <a href="${APP_URL}/analytics"
                style="display:inline-block;background:#80ffdd;color:#111;font-weight:600;padding:12px 24px;border-radius:8px;text-decoration:none">
               View analytics
             </a>

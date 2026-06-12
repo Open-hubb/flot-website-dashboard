@@ -13,7 +13,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 
-const APP_URL = "https://flot-dashboard.vercel.app"
+import { APP_URL } from "@/lib/app-url"
 
 function CopyField({ label, value, mono = true }: { label: string; value: string; mono?: boolean }) {
   const [copied, setCopied] = useState(false)
