@@ -11,6 +11,7 @@ export default withAuth(
         const { pathname } = req.nextUrl
         const isPublic =
           pathname.startsWith("/login") ||
+          pathname.startsWith("/forgot-password") ||
           pathname.startsWith("/set-password") ||
           pathname.startsWith("/site") ||
           pathname.startsWith("/api/public") ||
