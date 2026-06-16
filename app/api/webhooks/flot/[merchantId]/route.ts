@@ -35,8 +35,12 @@ export async function POST(
   }
 
   const body = await req.json().catch(() => null)
+  // Temporary: log the raw incoming payload so we can confirm Flot's exact
+  // shape on the first live webhook. Safe to remove once verified.
+  console.log("[flot-webhook]", params.merchantId, "payload:", JSON.stringify(body))
   const parsed = payloadSchema.safeParse(body)
   if (!parsed.success) {
+    console.warn("[flot-webhook] payload REJECTED (shape mismatch):", JSON.stringify(body))
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 })
   }
 
