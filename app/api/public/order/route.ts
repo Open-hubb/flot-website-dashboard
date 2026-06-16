@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { z } from "zod"
+import { randomBytes } from "crypto"
+
+function makeReference(businessName: string): string {
+  const prefix = (businessName.replace(/[^a-zA-Z]/g, "").slice(0, 3).toUpperCase() || "ORD")
+  const d = new Date()
+  const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`
+  const rand = randomBytes(3).toString("hex").toUpperCase()
+  return `${prefix}-${ymd}-${rand}`
+}
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -41,7 +50,7 @@ export async function POST(req: NextRequest) {
 
   const merchant = await db.merchant.findUnique({
     where: { flotMerchantId: merchantId },
-    select: { id: true, type: true },
+    select: { id: true, type: true, businessName: true },
   })
 
   if (!merchant || merchant.type !== "WEBSITE") {
@@ -51,6 +60,7 @@ export async function POST(req: NextRequest) {
   const customerOrder = await db.customerOrder.create({
     data: {
       merchantId: merchant.id,
+      reference: makeReference(merchant.businessName),
       name,
       phone,
       address,
@@ -58,6 +68,14 @@ export async function POST(req: NextRequest) {
       items,
       total,
       currency,
+      events: {
+        create: {
+          fromStatus: null,
+          toStatus: "PENDING",
+          changedBy: "system",
+          note: "Order placed on website",
+        },
+      },
     },
   })
 

@@ -93,6 +93,7 @@ model CustomerOrder {
   id            String              @id @default(cuid())
   merchantId    String
   merchant      Merchant            @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  reference     String?             @unique
   name          String
   phone         String
   address       String
@@ -104,8 +105,24 @@ model CustomerOrder {
   status        CustomerOrderStatus @default(PENDING)
   createdAt     DateTime            @default(now())
 
+  events        CustomerOrderEvent[]
+
   @@index([merchantId, createdAt])
   @@index([status])
+}
+
+// Append-only audit log of every status change on a CustomerOrder.
+model CustomerOrderEvent {
+  id              String               @id @default(cuid())
+  customerOrderId String
+  customerOrder   CustomerOrder        @relation(fields: [customerOrderId], references: [id], onDelete: Cascade)
+  fromStatus      CustomerOrderStatus?
+  toStatus        CustomerOrderStatus
+  changedBy       String               // merchant email, "system", or "flot-webhook"
+  note            String?
+  createdAt       DateTime             @default(now())
+
+  @@index([customerOrderId])
 }
 
 enum OrderStatus {
@@ -117,6 +134,9 @@ enum OrderStatus {
 enum CustomerOrderStatus {
   PENDING
   PAID
+  PREPARING
+  READY
+  COMPLETED
   CANCELLED
 }
 
