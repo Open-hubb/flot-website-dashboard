@@ -11,6 +11,7 @@ function SetPasswordContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const token = searchParams.get("token")
+  const isReset = searchParams.get("reset") === "1"
 
   const [password, setPassword] = useState("")
   const [confirm, setConfirm] = useState("")
@@ -58,7 +59,9 @@ function SetPasswordContent() {
             <span className="text-4xl font-bold tracking-tight text-foreground">flot</span>
             <span className="text-4xl font-bold text-primary">.</span>
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">Set up your account</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {isReset ? "Reset your password" : "Set up your account"}
+          </p>
         </div>
 
         <div className="rounded-xl border bg-card p-8 shadow-sm">
@@ -70,7 +73,9 @@ function SetPasswordContent() {
           ) : (
             <>
               <div className="mb-6">
-                <h1 className="text-xl font-semibold">Create your password</h1>
+                <h1 className="text-xl font-semibold">
+                  {isReset ? "Choose a new password" : "Create your password"}
+                </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                   You&apos;ll use this to sign in to your Flot dashboard.
                 </p>
