@@ -69,7 +69,18 @@ export async function POST(
     if (pendingCustomerOrder) {
       await db.customerOrder.update({
         where: { id: pendingCustomerOrder.id },
-        data: { flotRequestId, status: "PAID" },
+        data: {
+          flotRequestId,
+          status: "PAID",
+          events: {
+            create: {
+              fromStatus: "PENDING",
+              toStatus: "PAID",
+              changedBy: "flot-webhook",
+              note: "Payment confirmed by Flot",
+            },
+          },
+        },
       })
     }
   } else {
