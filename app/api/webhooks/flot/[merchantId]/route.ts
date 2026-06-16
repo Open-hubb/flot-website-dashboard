@@ -9,6 +9,10 @@ const payloadSchema = z.object({
   orderId: z.string(),
   flotRequestId: z.string(),
   status: z.enum(["completed", "failed"]),
+  // Optional — Flot's current payload omits these, but capture them if/when
+  // it starts sending the amount so transactions show a value.
+  amount: z.union([z.string(), z.number()]).optional(),
+  currency: z.string().optional(),
 })
 
 export async function POST(
@@ -44,17 +48,21 @@ export async function POST(
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 })
   }
 
-  const { orderId, flotRequestId, status } = parsed.data
+  const { orderId, flotRequestId, status, amount, currency } = parsed.data
+  const amountNum =
+    amount != null && !Number.isNaN(Number(amount)) ? Number(amount) : undefined
 
   if (status === "completed") {
     await db.order.upsert({
       where: { flotRequestId },
-      update: { status: "COMPLETED" },
+      update: { status: "COMPLETED", ...(amountNum != null ? { amount: amountNum } : {}), ...(currency ? { currency } : {}) },
       create: {
         merchantId: merchant.id,
         orderId,
         flotRequestId,
         status: "COMPLETED",
+        amount: amountNum,
+        currency: currency,
         rawPayload: body,
       },
     })
