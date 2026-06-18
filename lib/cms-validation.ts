@@ -71,3 +71,15 @@ export const publishSchema = z.object({
 export const deleteMediaSchema = z.object({
   id: z.string().min(1),
 })
+
+export const productSchema = z.object({
+  name: z.string().min(1, "Name is required").max(200),
+  price: z.number().min(0),
+  currency: z.string().max(10).optional(),
+  image: z.string().max(2000).optional(),
+  category: z.string().max(100).optional(),
+  description: z.string().max(2000).optional(),
+  badge: z.string().max(50).optional(),
+  order: z.number().int().optional(),
+  active: z.boolean().optional(),
+})

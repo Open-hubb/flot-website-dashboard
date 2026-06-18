@@ -30,6 +30,7 @@ model Merchant {
   analyticsEvents     WebsiteAnalyticsEvent[]
   cmsPages            CmsPage[]
   cmsMedia            CmsMedia[]
+  products            Product[]
 }
 
 // Populated by incoming Flot webhooks.
@@ -177,4 +178,26 @@ model CmsMedia {
 enum CmsPageStatus {
   DRAFT
   PUBLISHED
+}
+
+// Merchant-managed product/service catalogue. Edited in the dashboard
+// (hard-isolated by merchantId), fetched by the merchant's website via the
+// public API. No third-party CMS — the dashboard is the catalogue backend.
+model Product {
+  id          String   @id @default(cuid())
+  merchantId  String
+  merchant    Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  name        String
+  price       Decimal  @db.Decimal(18, 2)
+  currency    String   @default("SLE")
+  image       String?
+  category    String?
+  description String?
+  badge       String?
+  order       Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([merchantId])
 }
