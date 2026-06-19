@@ -31,6 +31,7 @@ model Merchant {
   cmsPages            CmsPage[]
   cmsMedia            CmsMedia[]
   products            Product[]
+  siteContent         SiteContent?
 }
 
 // Populated by incoming Flot webhooks.
@@ -178,6 +179,17 @@ model CmsMedia {
 enum CmsPageStatus {
   DRAFT
   PUBLISHED
+}
+
+// The merchant's whole-site editable content as one structured JSON document
+// (hero, about, services, testimonials, contact, footer, marquee, …). Edited
+// in the dashboard (hard-isolated by merchantId), fetched by the site.
+model SiteContent {
+  id         String   @id @default(cuid())
+  merchantId String   @unique
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  content    Json
+  updatedAt  DateTime @updatedAt
 }
 
 // Merchant-managed product/service catalogue. Edited in the dashboard
