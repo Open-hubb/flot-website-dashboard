@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { APP_URL } from "@/lib/app-url"
-import type { MenuContentData, MenuSection, MenuItem, MenuGroup } from "@/lib/menu-content"
+import type { MenuContentData, MenuSection, MenuItem, MenuGroup, MenuVariant } from "@/lib/menu-content"
 import { Loader2, Plus, Trash2, Check, Copy, ChevronDown } from "lucide-react"
 
 /* ---------- small building blocks ---------- */
@@ -25,11 +25,15 @@ function Field({ label, value, onChange, placeholder }: { label: string; value: 
 const ItemRow = memo(function ItemRow({
   item, onChange, onRemove,
 }: { item: MenuItem; onChange: (it: MenuItem) => void; onRemove: () => void }) {
+  const variants = item.variants ?? []
+  const setVariant = (idx: number, v: MenuVariant) => onChange({ ...item, variants: variants.map((x, j) => (j === idx ? v : x)) })
   return (
     <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
       <div className="flex gap-2">
         <Input className="flex-1" placeholder="Item name" value={item.name} onChange={(e) => onChange({ ...item, name: e.target.value })} />
-        <Input className="w-24" placeholder="Price" inputMode="decimal" value={String(item.price ?? "")} onChange={(e) => onChange({ ...item, price: e.target.value === "" ? 0 : Number(e.target.value) || 0 })} />
+        {variants.length === 0 && (
+          <Input className="w-24" placeholder="Price" inputMode="decimal" value={String(item.price ?? "")} onChange={(e) => onChange({ ...item, price: e.target.value === "" ? 0 : Number(e.target.value) || 0 })} />
+        )}
         <Input className="w-20" placeholder="No." value={item.itemNumber} onChange={(e) => onChange({ ...item, itemNumber: e.target.value })} />
         <button onClick={onRemove} className="shrink-0 rounded-md border px-2 hover:bg-muted" title="Remove item">
           <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -42,6 +46,23 @@ const ItemRow = memo(function ItemRow({
         <Input className="flex-1" placeholder="Sub-header (optional)" value={item.subHeader ?? ""} onChange={(e) => onChange({ ...item, subHeader: e.target.value || null })} />
         <Input className="flex-1" placeholder="Tags (comma-separated)" value={(item.tags ?? []).join(", ")} onChange={(e) => onChange({ ...item, tags: e.target.value.split(",").map((t) => t.trim()).filter(Boolean) })} />
       </div>
+      {/* Variants (e.g. Shot / Bottle) — when present, they replace the single price */}
+      {variants.length > 0 && (
+        <div className="space-y-1.5 rounded-md border border-dashed p-2">
+          <Label className="text-[11px] text-muted-foreground">Price options</Label>
+          {variants.map((v, vi) => (
+            <div key={vi} className="flex gap-2">
+              <Input className="flex-1" placeholder="Label (e.g. Shot)" value={v.label} onChange={(e) => setVariant(vi, { ...v, label: e.target.value })} />
+              <Input className="w-24" placeholder="Price" inputMode="decimal" value={String(v.price ?? "")} onChange={(e) => setVariant(vi, { ...v, price: e.target.value === "" ? 0 : Number(e.target.value) || 0 })} />
+              <button onClick={() => onChange({ ...item, variants: variants.filter((_, j) => j !== vi) })} className="shrink-0 rounded-md border px-2 hover:bg-muted"><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
+            </div>
+          ))}
+          <button onClick={() => onChange({ ...item, variants: [...variants, { label: "", price: 0 }] })} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"><Plus className="h-3 w-3" /> Add option</button>
+        </div>
+      )}
+      {variants.length === 0 && (
+        <button onClick={() => onChange({ ...item, variants: [{ label: "", price: item.price || 0 }] })} className="text-[11px] font-medium text-primary hover:underline">+ Use price options (Shot / Bottle…)</button>
+      )}
     </div>
   )
 })
@@ -99,11 +120,13 @@ const SectionCard = memo(function SectionCard({
             </div>
           </div>
 
+          <Field label="Section image URL (optional)" value={section.image ?? ""} onChange={(v) => updateSection(section.id, (s) => ({ ...s, image: v }))} placeholder="https://…" />
+
           <div className="space-y-2">
             {section.items.map((it, i) => (
               <ItemRow key={i} item={it} onChange={(next) => setItem(i, next)} onRemove={() => removeItem(i)} />
             ))}
-            <button onClick={() => updateSection(section.id, (s) => ({ ...s, items: [...s.items, { name: "", price: 0, description: "", itemNumber: "", tags: [], subHeader: null }] }))}
+            <button onClick={() => updateSection(section.id, (s) => ({ ...s, items: [...s.items, { name: "", price: 0, description: "", itemNumber: "", tags: [], subHeader: null, variants: [] }] }))}
               className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
               <Plus className="h-3.5 w-3.5" /> Add item
             </button>
@@ -156,7 +179,7 @@ export function MenuEditor({ flotMerchantId, initialContent }: { flotMerchantId:
   }
   function addSection() {
     const id = `section-${Date.now()}`
-    setMenu((m) => ({ ...m, sections: [...m.sections, { id, title: "", groupId: m.groups[0]?.id ?? "", sortOrder: m.sections.length, items: [] }] }))
+    setMenu((m) => ({ ...m, sections: [...m.sections, { id, title: "", groupId: m.groups[0]?.id ?? "", sortOrder: m.sections.length, image: "", items: [] }] }))
   }
 
   return (
