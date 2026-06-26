@@ -3,6 +3,13 @@ import { z } from "zod"
 // A restaurant/bar digital menu. Mirrors the structure the menu sites already
 // use (branding + groups + sections → items), so a site can fetch it from the
 // dashboard's public API with no shape change.
+// A labelled price option (e.g. Shot / Bottle) for bar menus. When an item has
+// variants, they replace its single price.
+export interface MenuVariant {
+  label: string
+  price: number
+}
+
 export interface MenuItem {
   name: string
   price: number
@@ -10,6 +17,7 @@ export interface MenuItem {
   itemNumber: string
   tags: string[]
   subHeader: string | null
+  variants: MenuVariant[]
 }
 
 export interface MenuSection {
@@ -17,6 +25,7 @@ export interface MenuSection {
   title: string
   groupId: string
   sortOrder: number
+  image: string
   items: MenuItem[]
 }
 
@@ -73,6 +82,11 @@ export const EMPTY_MENU: MenuContentData = {
 const s = () => z.string().default("")
 const n = () => z.coerce.number().default(0)
 
+const variantSchema = z.object({
+  label: s(),
+  price: z.coerce.number().default(0),
+})
+
 const itemSchema = z.object({
   name: s(),
   price: z.coerce.number().default(0),
@@ -80,6 +94,7 @@ const itemSchema = z.object({
   itemNumber: s(),
   tags: z.array(z.string()).default([]),
   subHeader: z.string().nullable().default(null),
+  variants: z.array(variantSchema).default([]),
 })
 
 const sectionSchema = z.object({
@@ -87,6 +102,7 @@ const sectionSchema = z.object({
   title: s(),
   groupId: s(),
   sortOrder: n(),
+  image: s(),
   items: z.array(itemSchema).default([]),
 })
 
