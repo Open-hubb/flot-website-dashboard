@@ -15,6 +15,7 @@ import {
   Bell,
   Settings,
   LogOut,
+  UtensilsCrossed,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -25,6 +26,8 @@ interface NavItem {
   icon: React.ElementType
   websiteOnly?: boolean
   qrOnly?: boolean
+  menuOnly?: boolean    // only for menu (restaurant) sites
+  hideForMenu?: boolean // hide for menu sites (e.g. the generic site CMS)
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -34,8 +37,9 @@ const NAV_ITEMS: NavItem[] = [
 { label: "Payouts", href: "/payouts", icon: Wallet },
   { label: "Customers", href: "/customers", icon: Users },
   { label: "Orders", href: "/orders", icon: ShoppingBag, websiteOnly: true },
-  { label: "Products", href: "/products", icon: Package, websiteOnly: true },
-  { label: "CMS", href: "/cms", icon: Layers, websiteOnly: true },
+  { label: "Menu", href: "/menu", icon: UtensilsCrossed, websiteOnly: true, menuOnly: true },
+  { label: "Products", href: "/products", icon: Package, websiteOnly: true, hideForMenu: true },
+  { label: "CMS", href: "/cms", icon: Layers, websiteOnly: true, hideForMenu: true },
   { label: "Web Analytics", href: "/website-analytics", icon: Globe, websiteOnly: true },
   { label: "Notifications", href: "/notifications", icon: Bell },
   { label: "Settings", href: "/settings", icon: Settings },
@@ -44,15 +48,18 @@ const NAV_ITEMS: NavItem[] = [
 interface SidebarProps {
   merchantType: "QR_ONLY" | "WEBSITE"
   businessName: string
+  isMenu?: boolean
 }
 
-export function Sidebar({ merchantType, businessName }: SidebarProps) {
+export function Sidebar({ merchantType, businessName, isMenu = false }: SidebarProps) {
   const pathname = usePathname()
   const isWebsite = merchantType === "WEBSITE"
 
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (item.websiteOnly && !isWebsite) return false
     if (item.qrOnly && isWebsite) return false
+    if (item.menuOnly && !isMenu) return false
+    if (item.hideForMenu && isMenu) return false
     return true
   })
 

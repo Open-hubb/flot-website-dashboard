@@ -15,10 +15,12 @@ export default async function DashboardLayout({
 
   const merchant = await db.merchant.findUnique({
     where: { id: session.user.id },
-    select: { type: true, businessName: true, name: true },
+    select: { type: true, businessName: true, name: true, menuContent: { select: { id: true } } },
   })
 
   if (!merchant) redirect("/login")
+
+  const isMenu = !!merchant.menuContent
 
   const unreadCount = await db.inAppNotification.count({
     where: { merchantId: session.user.id, read: false },
@@ -30,7 +32,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar merchantType={merchant.type} businessName={merchant.businessName} />
+      <Sidebar merchantType={merchant.type} businessName={merchant.businessName} isMenu={isMenu} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header
           title={pageTitle}
@@ -53,6 +55,7 @@ function getPageTitle(pathname: string): string {
     "/customers": "Customers",
     "/orders": "Orders",
     "/products": "Products",
+    "/menu": "Menu",
     "/cms": "Website CMS",
     "/cms/media": "Media Library",
     "/website-analytics": "Website Analytics",

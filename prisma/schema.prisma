@@ -32,6 +32,7 @@ model Merchant {
   cmsMedia            CmsMedia[]
   products            Product[]
   siteContent         SiteContent?
+  menuContent         MenuContent?
 }
 
 // Populated by incoming Flot webhooks.
@@ -185,6 +186,18 @@ enum CmsPageStatus {
 // (hero, about, services, testimonials, contact, footer, marquee, …). Edited
 // in the dashboard (hard-isolated by merchantId), fetched by the site.
 model SiteContent {
+  id         String   @id @default(cuid())
+  merchantId String   @unique
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  content    Json
+  updatedAt  DateTime @updatedAt
+}
+
+// A restaurant/bar digital menu as one structured JSON document
+// (branding, groups, sections → items). Edited in the dashboard
+// (hard-isolated by merchantId), fetched by the merchant's menu site via the
+// public API. Replaces the site's own standalone menu editor.
+model MenuContent {
   id         String   @id @default(cuid())
   merchantId String   @unique
   merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
