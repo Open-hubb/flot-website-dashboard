@@ -1,6 +1,6 @@
 "use client"
 
-import { memo, useCallback, useMemo, useState } from "react"
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -34,79 +34,59 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
   )
 }
 
-/* ---------- live preview (reflects unsaved edits) ---------- */
+/* ---------- live preview: the REAL site in an iframe, fed unsaved edits ---------- */
 
-const MenuPreview = memo(function MenuPreview({ menu }: { menu: MenuContentData }) {
-  const cur = menu.branding.currency || ""
-  const fmt = (n: number) => `${cur ? cur + " " : ""}${n}`
+// Embeds the merchant's actual menu site and streams the current (unsaved) menu
+// to it via postMessage, so the preview is pixel-identical to production —
+// real colors, fonts, collapsible categories, everything.
+function PreviewFrame({ siteUrl, menu }: { siteUrl: string; menu: MenuContentData }) {
+  const ref = useRef<HTMLIFrameElement>(null)
+  const origin = useMemo(() => { try { return new URL(siteUrl).origin } catch { return "" } }, [siteUrl])
 
-  const sortedGroups = [...menu.groups].sort((a, b) => a.sortOrder - b.sortOrder)
-  const sectionsFor = (gid: string) =>
-    menu.sections.filter((s) => s.groupId === gid).sort((a, b) => a.sortOrder - b.sortOrder)
-  const ungrouped = menu.sections
-    .filter((s) => !menu.groups.some((g) => g.id === s.groupId))
-    .sort((a, b) => a.sortOrder - b.sortOrder)
+  const post = useCallback(() => {
+    const w = ref.current?.contentWindow
+    if (w && origin) w.postMessage({ source: "flot-dashboard", type: "menu-preview", menu }, origin)
+  }, [menu, origin])
 
-  const renderSection = (s: MenuSection) => (
-    <div key={s.id} className="mb-4">
-      <div className="mb-2 border-b pb-1 text-sm font-medium">{s.title || "Untitled section"}</div>
-      <div className="space-y-2">
-        {s.items.length === 0 && <p className="text-xs text-muted-foreground">No items</p>}
-        {s.items.map((it, i) => (
-          <div key={i} className="flex justify-between gap-3 text-sm">
-            <div className="min-w-0">
-              <div className="font-medium leading-tight">{it.name || "—"}</div>
-              {it.subHeader && <div className="text-[11px] text-muted-foreground">{it.subHeader}</div>}
-              {it.description && <div className="text-xs leading-snug text-muted-foreground">{it.description}</div>}
-            </div>
-            <div className="shrink-0 text-right text-muted-foreground">
-              {it.variants && it.variants.length
-                ? it.variants.map((v, vi) => (
-                    <div key={vi} className="whitespace-nowrap text-xs">{v.label} {fmt(v.price)}</div>
-                  ))
-                : <span className="whitespace-nowrap">{fmt(it.price)}</span>}
-            </div>
-          </div>
-        ))}
+  // Push the latest menu (debounced) whenever it changes.
+  useEffect(() => {
+    const t = setTimeout(post, 250)
+    return () => clearTimeout(t)
+  }, [post])
+
+  // Reply to the site's "ready" handshake so it gets the draft even if it
+  // finished loading before our first push.
+  useEffect(() => {
+    function onMsg(e: MessageEvent) {
+      if (origin && e.origin === origin && e.data?.source === "flot-site" && e.data?.type === "preview-ready") post()
+    }
+    window.addEventListener("message", onMsg)
+    return () => window.removeEventListener("message", onMsg)
+  }, [origin, post])
+
+  if (!siteUrl) {
+    return (
+      <div className="rounded-xl border bg-card p-6 text-center text-xs text-muted-foreground">
+        Set the site URL to enable the live preview.
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
       <div className="border-b bg-muted/30 px-4 py-2 text-[11px] font-medium text-muted-foreground">
-        Live preview — reflects unsaved changes
+        Live preview — your real site, showing unsaved changes
       </div>
-      <div className="max-h-[calc(100vh-9rem)] overflow-y-auto p-4">
-        <div className="mb-5 text-center">
-          {menu.branding.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={menu.branding.logoUrl} alt="" className="mx-auto mb-2 h-12 object-contain" />
-          ) : null}
-          <div className="text-lg font-semibold">{menu.branding.restaurantName || "Restaurant"}</div>
-          {menu.branding.subtitle && <div className="text-xs text-muted-foreground">{menu.branding.subtitle}</div>}
-          {menu.branding.phone && <div className="text-xs text-muted-foreground">{menu.branding.phone}</div>}
-        </div>
-
-        {menu.sections.length === 0 && (
-          <p className="py-8 text-center text-sm text-muted-foreground">No sections yet — add one to see it here.</p>
-        )}
-
-        {sortedGroups.map((g) => {
-          const secs = sectionsFor(g.id)
-          if (!secs.length) return null
-          return (
-            <div key={g.id} className="mb-5">
-              <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-primary">{g.label || "Group"}</div>
-              {secs.map(renderSection)}
-            </div>
-          )
-        })}
-        {ungrouped.length > 0 && <div className="mb-5">{ungrouped.map(renderSection)}</div>}
-      </div>
+      <iframe
+        ref={ref}
+        src={siteUrl}
+        title="Menu preview"
+        onLoad={post}
+        className="h-[calc(100vh-9rem)] w-full bg-white"
+      />
     </div>
   )
-})
+}
 
 /* ---------- one menu item row (memoized) ---------- */
 
@@ -380,7 +360,7 @@ export function MenuEditor({ flotMerchantId, siteUrl, initialContent }: { flotMe
 
       {/* ---------- preview: side panel on xl ---------- */}
       <aside className="hidden w-[400px] shrink-0 xl:sticky xl:top-4 xl:block">
-        <MenuPreview menu={menu} />
+        <PreviewFrame siteUrl={siteUrl ?? ""} menu={menu} />
       </aside>
 
       {/* ---------- preview: overlay on smaller screens ---------- */}
@@ -391,7 +371,7 @@ export function MenuEditor({ flotMerchantId, siteUrl, initialContent }: { flotMe
               <h3 className="font-semibold">Preview</h3>
               <button onClick={() => setPreviewOpen(false)} className="rounded-md border p-1 hover:bg-muted"><X className="h-4 w-4" /></button>
             </div>
-            <MenuPreview menu={menu} />
+            <PreviewFrame siteUrl={siteUrl ?? ""} menu={menu} />
           </div>
         </div>
       )}
