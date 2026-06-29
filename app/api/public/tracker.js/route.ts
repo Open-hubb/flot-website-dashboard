@@ -8,6 +8,8 @@ export async function GET(req: NextRequest) {
 (function() {
   var mid = ${JSON.stringify(merchantId)};
   if (!mid) return;
+  // Don't count dashboard preview (or any) iframe embeds as real page views.
+  try { if (window.top !== window.self) return; } catch(e) { return; }
   try {
     fetch("${APP_URL}/api/public/track", {
       method: "POST",
