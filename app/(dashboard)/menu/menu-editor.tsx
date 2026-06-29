@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { MenuContentData, MenuSection, MenuItem, MenuGroup, MenuVariant } from "@/lib/menu-content"
-import { Loader2, Plus, Trash2, Check, Copy, ChevronDown, Eye, X, ExternalLink } from "lucide-react"
+import { Loader2, Plus, Trash2, Check, Copy, ChevronDown, Eye, X, ExternalLink, Upload } from "lucide-react"
 
 // Confirm before any destructive delete (guards against mis-clicks).
 function confirmDelete(what: string) {
@@ -30,6 +30,40 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
     <div className="space-y-1.5">
       <Label className="text-muted-foreground">{label}</Label>
       <Input value={value} readOnly disabled className="cursor-not-allowed opacity-70" />
+    </div>
+  )
+}
+
+// Upload an image to the dashboard's media store (Blob) and return its URL.
+function ImageUpload({ label, value, onChange }: { label: string; value: string; onChange: (url: string) => void }) {
+  const [uploading, setUploading] = useState(false)
+  const [err, setErr] = useState("")
+  async function upload(file: File) {
+    setUploading(true); setErr("")
+    const fd = new FormData(); fd.append("file", file)
+    const res = await fetch("/api/cms/media", { method: "POST", body: fd })
+    setUploading(false)
+    if (res.ok) { const { url } = await res.json(); onChange(url) }
+    else setErr("Upload failed. Try a JPG/PNG/WebP under the size limit.")
+  }
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <div className="flex items-center gap-3">
+        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md border bg-muted">
+          {value ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={value} alt="" className="h-full w-full object-cover" />
+          ) : null}
+        </div>
+        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted">
+          {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+          {value ? "Replace" : "Upload"}
+          <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f) }} />
+        </label>
+        {value && <button onClick={() => onChange("")} className="rounded-md border px-2 py-1 text-xs hover:bg-muted">Remove</button>}
+      </div>
+      {err && <p className="text-xs text-destructive">{err}</p>}
     </div>
   )
 }
@@ -187,7 +221,7 @@ const SectionCard = memo(function SectionCard({
             </div>
           </div>
 
-          <Field label="Section image URL (optional)" value={section.image ?? ""} onChange={(v) => updateSection(section.id, (s) => ({ ...s, image: v }))} placeholder="https://…" />
+          <ImageUpload label="Section image (optional)" value={section.image ?? ""} onChange={(url) => updateSection(section.id, (s) => ({ ...s, image: url }))} />
 
           <div className="space-y-2">
             {section.items.map((it, i) => (
@@ -304,7 +338,7 @@ export function MenuEditor({ flotMerchantId, siteUrl, initialContent }: { flotMe
                 <Field label="Phone" value={menu.branding.phone} onChange={(v) => setBranding("phone", v)} />
                 <Field label="TIN number" value={menu.branding.tinNumber} onChange={(v) => setBranding("tinNumber", v)} />
                 <Field label="Currency" value={menu.branding.currency} onChange={(v) => setBranding("currency", v)} />
-                <Field label="Logo URL" value={menu.branding.logoUrl} onChange={(v) => setBranding("logoUrl", v)} />
+                <ImageUpload label="Logo" value={menu.branding.logoUrl} onChange={(url) => setBranding("logoUrl", url)} />
               </div>
               <div className="space-y-3 rounded-lg border border-dashed bg-muted/20 p-3">
                 <p className="text-[11px] font-medium text-muted-foreground">Managed by Flot — read-only</p>
