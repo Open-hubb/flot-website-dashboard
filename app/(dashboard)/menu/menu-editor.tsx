@@ -5,9 +5,13 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { APP_URL } from "@/lib/app-url"
 import type { MenuContentData, MenuSection, MenuItem, MenuGroup, MenuVariant } from "@/lib/menu-content"
-import { Loader2, Plus, Trash2, Check, Copy, ChevronDown } from "lucide-react"
+import { Loader2, Plus, Trash2, Check, Copy, ChevronDown, Eye, X, ExternalLink } from "lucide-react"
+
+// Confirm before any destructive delete (guards against mis-clicks).
+function confirmDelete(what: string) {
+  return typeof window === "undefined" || window.confirm(`Delete ${what}? This can't be undone.`)
+}
 
 /* ---------- small building blocks ---------- */
 
@@ -19,6 +23,90 @@ function Field({ label, value, onChange, placeholder }: { label: string; value: 
     </div>
   )
 }
+
+// Flot-managed field — shown for transparency but not editable by the merchant.
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-muted-foreground">{label}</Label>
+      <Input value={value} readOnly disabled className="cursor-not-allowed opacity-70" />
+    </div>
+  )
+}
+
+/* ---------- live preview (reflects unsaved edits) ---------- */
+
+const MenuPreview = memo(function MenuPreview({ menu }: { menu: MenuContentData }) {
+  const cur = menu.branding.currency || ""
+  const fmt = (n: number) => `${cur ? cur + " " : ""}${n}`
+
+  const sortedGroups = [...menu.groups].sort((a, b) => a.sortOrder - b.sortOrder)
+  const sectionsFor = (gid: string) =>
+    menu.sections.filter((s) => s.groupId === gid).sort((a, b) => a.sortOrder - b.sortOrder)
+  const ungrouped = menu.sections
+    .filter((s) => !menu.groups.some((g) => g.id === s.groupId))
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+
+  const renderSection = (s: MenuSection) => (
+    <div key={s.id} className="mb-4">
+      <div className="mb-2 border-b pb-1 text-sm font-medium">{s.title || "Untitled section"}</div>
+      <div className="space-y-2">
+        {s.items.length === 0 && <p className="text-xs text-muted-foreground">No items</p>}
+        {s.items.map((it, i) => (
+          <div key={i} className="flex justify-between gap-3 text-sm">
+            <div className="min-w-0">
+              <div className="font-medium leading-tight">{it.name || "—"}</div>
+              {it.subHeader && <div className="text-[11px] text-muted-foreground">{it.subHeader}</div>}
+              {it.description && <div className="text-xs leading-snug text-muted-foreground">{it.description}</div>}
+            </div>
+            <div className="shrink-0 text-right text-muted-foreground">
+              {it.variants && it.variants.length
+                ? it.variants.map((v, vi) => (
+                    <div key={vi} className="whitespace-nowrap text-xs">{v.label} {fmt(v.price)}</div>
+                  ))
+                : <span className="whitespace-nowrap">{fmt(it.price)}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+      <div className="border-b bg-muted/30 px-4 py-2 text-[11px] font-medium text-muted-foreground">
+        Live preview — reflects unsaved changes
+      </div>
+      <div className="max-h-[calc(100vh-9rem)] overflow-y-auto p-4">
+        <div className="mb-5 text-center">
+          {menu.branding.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={menu.branding.logoUrl} alt="" className="mx-auto mb-2 h-12 object-contain" />
+          ) : null}
+          <div className="text-lg font-semibold">{menu.branding.restaurantName || "Restaurant"}</div>
+          {menu.branding.subtitle && <div className="text-xs text-muted-foreground">{menu.branding.subtitle}</div>}
+          {menu.branding.phone && <div className="text-xs text-muted-foreground">{menu.branding.phone}</div>}
+        </div>
+
+        {menu.sections.length === 0 && (
+          <p className="py-8 text-center text-sm text-muted-foreground">No sections yet — add one to see it here.</p>
+        )}
+
+        {sortedGroups.map((g) => {
+          const secs = sectionsFor(g.id)
+          if (!secs.length) return null
+          return (
+            <div key={g.id} className="mb-5">
+              <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-primary">{g.label || "Group"}</div>
+              {secs.map(renderSection)}
+            </div>
+          )
+        })}
+        {ungrouped.length > 0 && <div className="mb-5">{ungrouped.map(renderSection)}</div>}
+      </div>
+    </div>
+  )
+})
 
 /* ---------- one menu item row (memoized) ---------- */
 
@@ -35,7 +123,7 @@ const ItemRow = memo(function ItemRow({
           <Input className="w-24" placeholder="Price" inputMode="decimal" value={String(item.price ?? "")} onChange={(e) => onChange({ ...item, price: e.target.value === "" ? 0 : Number(e.target.value) || 0 })} />
         )}
         <Input className="w-20" placeholder="No." value={item.itemNumber} onChange={(e) => onChange({ ...item, itemNumber: e.target.value })} />
-        <button onClick={onRemove} className="shrink-0 rounded-md border px-2 hover:bg-muted" title="Remove item">
+        <button onClick={() => { if (confirmDelete(`item "${item.name || "untitled"}"`)) onRemove() }} className="shrink-0 rounded-md border px-2 hover:bg-muted" title="Remove item">
           <Trash2 className="h-3.5 w-3.5 text-destructive" />
         </button>
       </div>
@@ -97,7 +185,7 @@ const SectionCard = memo(function SectionCard({
           {groupLabel && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{groupLabel}</span>}
           <span className="text-xs text-muted-foreground">· {section.items.length} items</span>
         </button>
-        <button onClick={() => removeSection(section.id)} className="shrink-0 rounded-md border px-2 py-1 hover:bg-muted" title="Remove section">
+        <button onClick={() => { if (confirmDelete(`section "${section.title || "untitled"}" and its ${section.items.length} items`)) removeSection(section.id) }} className="shrink-0 rounded-md border px-2 py-1 hover:bg-muted" title="Remove section">
           <Trash2 className="h-3.5 w-3.5 text-destructive" />
         </button>
       </div>
@@ -139,7 +227,7 @@ const SectionCard = memo(function SectionCard({
 
 /* ---------- main editor ---------- */
 
-export function MenuEditor({ flotMerchantId, initialContent }: { flotMerchantId: string; initialContent: MenuContentData }) {
+export function MenuEditor({ flotMerchantId, siteUrl, initialContent }: { flotMerchantId: string; siteUrl?: string; initialContent: MenuContentData }) {
   const router = useRouter()
   const [menu, setMenu] = useState<MenuContentData>(initialContent)
   const [saving, setSaving] = useState(false)
@@ -147,8 +235,7 @@ export function MenuEditor({ flotMerchantId, initialContent }: { flotMerchantId:
   const [error, setError] = useState("")
   const [copied, setCopied] = useState(false)
   const [brandingOpen, setBrandingOpen] = useState(true)
-
-  const apiUrl = `${APP_URL}/api/public/menu/${flotMerchantId}`
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const updateSection = useCallback((id: string, updater: (s: MenuSection) => MenuSection) => {
     setMenu((m) => ({ ...m, sections: m.sections.map((s) => (s.id === id ? updater(s) : s)) }))
@@ -183,92 +270,131 @@ export function MenuEditor({ flotMerchantId, initialContent }: { flotMerchantId:
   }
 
   return (
-    <div className="space-y-5 max-w-3xl">
-      {/* Header / save */}
-      <div className="sticky top-0 z-10 -mx-6 flex items-center justify-between border-b bg-background/90 px-6 py-3 backdrop-blur">
-        <div>
-          <h2 className="text-lg font-semibold">Menu</h2>
-          <p className="text-xs text-muted-foreground">{menu.sections.length} sections · {totalItems} items — changes go live after you save</p>
-        </div>
-        <Button onClick={save} disabled={saving}>
-          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : saved ? <Check className="mr-2 h-4 w-4" /> : null}
-          {saved ? "Saved" : "Save changes"}
-        </Button>
-      </div>
-
-      {error && <p className="text-sm text-destructive">{error}</p>}
-
-      <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-        <span className="shrink-0 font-medium text-foreground">Your menu site reads from:</span>
-        <code className="flex-1 truncate font-mono">{apiUrl}</code>
-        <button onClick={() => { navigator.clipboard.writeText(apiUrl); setCopied(true); setTimeout(() => setCopied(false), 1500) }} className="shrink-0 rounded p-1 hover:bg-muted">
-          {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-        </button>
-      </div>
-
-      {/* Branding */}
-      <div className="rounded-xl border bg-card shadow-sm">
-        <button onClick={() => setBrandingOpen((o) => !o)} className="flex w-full items-center justify-between px-5 py-4 text-left">
-          <div>
-            <h3 className="font-semibold">Branding & header</h3>
-            <p className="text-xs text-muted-foreground">Restaurant name, logo, checkout link, footer</p>
+    <div className="xl:flex xl:items-start xl:gap-6">
+      {/* ---------- editor column ---------- */}
+      <div className="min-w-0 flex-1 space-y-5 xl:max-w-3xl">
+        {/* Header / save */}
+        <div className="sticky top-0 z-20 -mx-6 flex items-center justify-between gap-3 border-b bg-background/90 px-6 py-3 backdrop-blur">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold">Menu</h2>
+            <p className="truncate text-xs text-muted-foreground">{menu.sections.length} sections · {totalItems} items — changes go live after you save</p>
           </div>
-          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${brandingOpen ? "rotate-180" : ""}`} />
-        </button>
-        {brandingOpen && (
-          <div className="space-y-3 border-t px-5 py-4">
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Restaurant name" value={menu.branding.restaurantName} onChange={(v) => setBranding("restaurantName", v)} />
-              <Field label="Subtitle" value={menu.branding.subtitle} onChange={(v) => setBranding("subtitle", v)} />
-              <Field label="Phone" value={menu.branding.phone} onChange={(v) => setBranding("phone", v)} />
-              <Field label="TIN number" value={menu.branding.tinNumber} onChange={(v) => setBranding("tinNumber", v)} />
-              <Field label="Currency" value={menu.branding.currency} onChange={(v) => setBranding("currency", v)} />
-              <Field label="Checkout URL (Flot pay link)" value={menu.branding.checkoutUrl} onChange={(v) => setBranding("checkoutUrl", v)} />
-              <Field label="Logo URL" value={menu.branding.logoUrl} onChange={(v) => setBranding("logoUrl", v)} />
-              <Field label="OG image URL" value={menu.branding.ogImageUrl} onChange={(v) => setBranding("ogImageUrl", v)} />
-              <Field label="Footer text" value={menu.branding.footerText} onChange={(v) => setBranding("footerText", v)} />
-              <Field label="Footer link text" value={menu.branding.footerLinkText} onChange={(v) => setBranding("footerLinkText", v)} />
-              <Field label="Footer link URL" value={menu.branding.footerLinkUrl} onChange={(v) => setBranding("footerLinkUrl", v)} />
-            </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button onClick={() => setPreviewOpen(true)} className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted xl:hidden">
+              <Eye className="h-3.5 w-3.5" /> Preview
+            </button>
+            <Button onClick={save} disabled={saving}>
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : saved ? <Check className="mr-2 h-4 w-4" /> : null}
+              {saved ? "Saved" : "Save changes"}
+            </Button>
           </div>
-        )}
-      </div>
-
-      {/* Groups */}
-      <div className="rounded-xl border bg-card shadow-sm">
-        <div className="px-5 py-4">
-          <h3 className="font-semibold">Menu groups</h3>
-          <p className="text-xs text-muted-foreground">Top-level tabs (e.g. Food, Drinks). Sections belong to a group.</p>
         </div>
-        <div className="space-y-2 border-t px-5 py-4">
-          {menu.groups.map((g, i) => (
-            <div key={g.id} className="flex gap-2">
-              <Input placeholder="Group label" value={g.label} onChange={(e) => setMenu((m) => ({ ...m, groups: m.groups.map((x, j) => j === i ? { ...x, label: e.target.value } : x) }))} />
-              <Input className="w-20" inputMode="numeric" placeholder="Sort" value={String(g.sortOrder ?? 0)} onChange={(e) => setMenu((m) => ({ ...m, groups: m.groups.map((x, j) => j === i ? { ...x, sortOrder: Number(e.target.value) || 0 } : x) }))} />
-              <button onClick={() => setMenu((m) => ({ ...m, groups: m.groups.filter((_, j) => j !== i) }))} className="shrink-0 rounded-md border px-2 hover:bg-muted"><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
+
+        {error && <p className="text-sm text-destructive">{error}</p>}
+
+        {/* Live menu URL */}
+        <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs">
+          <span className="shrink-0 font-medium text-foreground">Your live menu:</span>
+          {siteUrl ? (
+            <>
+              <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="flex-1 truncate font-medium text-primary hover:underline">{siteUrl}</a>
+              <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded p-1 hover:bg-muted" title="Open site"><ExternalLink className="h-3.5 w-3.5 text-muted-foreground" /></a>
+              <button onClick={() => { navigator.clipboard.writeText(siteUrl); setCopied(true); setTimeout(() => setCopied(false), 1500) }} className="shrink-0 rounded p-1 hover:bg-muted" title="Copy link">
+                {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+              </button>
+            </>
+          ) : (
+            <span className="flex-1 truncate text-muted-foreground">website URL not set</span>
+          )}
+        </div>
+
+        {/* Branding */}
+        <div className="rounded-xl border bg-card shadow-sm">
+          <button onClick={() => setBrandingOpen((o) => !o)} className="flex w-full items-center justify-between px-5 py-4 text-left">
+            <div>
+              <h3 className="font-semibold">Branding &amp; header</h3>
+              <p className="text-xs text-muted-foreground">Restaurant name, logo, phone</p>
             </div>
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${brandingOpen ? "rotate-180" : ""}`} />
+          </button>
+          {brandingOpen && (
+            <div className="space-y-4 border-t px-5 py-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Restaurant name" value={menu.branding.restaurantName} onChange={(v) => setBranding("restaurantName", v)} />
+                <Field label="Subtitle" value={menu.branding.subtitle} onChange={(v) => setBranding("subtitle", v)} />
+                <Field label="Phone" value={menu.branding.phone} onChange={(v) => setBranding("phone", v)} />
+                <Field label="TIN number" value={menu.branding.tinNumber} onChange={(v) => setBranding("tinNumber", v)} />
+                <Field label="Currency" value={menu.branding.currency} onChange={(v) => setBranding("currency", v)} />
+                <Field label="Logo URL" value={menu.branding.logoUrl} onChange={(v) => setBranding("logoUrl", v)} />
+              </div>
+              <div className="space-y-3 rounded-lg border border-dashed bg-muted/20 p-3">
+                <p className="text-[11px] font-medium text-muted-foreground">Managed by Flot — read-only</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <ReadOnlyField label="Checkout URL (Flot pay link)" value={menu.branding.checkoutUrl} />
+                  <ReadOnlyField label="OG image URL" value={menu.branding.ogImageUrl} />
+                  <ReadOnlyField label="Footer text" value={menu.branding.footerText} />
+                  <ReadOnlyField label="Footer link text" value={menu.branding.footerLinkText} />
+                  <ReadOnlyField label="Footer link URL" value={menu.branding.footerLinkUrl} />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Groups */}
+        <div className="rounded-xl border bg-card shadow-sm">
+          <div className="px-5 py-4">
+            <h3 className="font-semibold">Menu groups</h3>
+            <p className="text-xs text-muted-foreground">Top-level tabs (e.g. Food, Drinks). Sections belong to a group.</p>
+          </div>
+          <div className="space-y-2 border-t px-5 py-4">
+            {menu.groups.map((g, i) => (
+              <div key={g.id} className="flex gap-2">
+                <Input placeholder="Group label" value={g.label} onChange={(e) => setMenu((m) => ({ ...m, groups: m.groups.map((x, j) => j === i ? { ...x, label: e.target.value } : x) }))} />
+                <Input className="w-20" inputMode="numeric" placeholder="Sort" value={String(g.sortOrder ?? 0)} onChange={(e) => setMenu((m) => ({ ...m, groups: m.groups.map((x, j) => j === i ? { ...x, sortOrder: Number(e.target.value) || 0 } : x) }))} />
+                <button onClick={() => { if (confirmDelete(`the "${g.label || "untitled"}" group`)) setMenu((m) => ({ ...m, groups: m.groups.filter((_, j) => j !== i) })) }} className="shrink-0 rounded-md border px-2 hover:bg-muted"><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
+              </div>
+            ))}
+            <button onClick={addGroup} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add group</button>
+          </div>
+        </div>
+
+        {/* Sections */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold">Sections &amp; items</h3>
+            <button onClick={addSection} className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted"><Plus className="h-3.5 w-3.5" /> Add section</button>
+          </div>
+          {menu.sections.map((sec) => (
+            <SectionCard key={sec.id} section={sec} groups={menu.groups} updateSection={updateSection} removeSection={removeSection} />
           ))}
-          <button onClick={addGroup} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add group</button>
+        </div>
+
+        <div className="flex justify-end pb-8">
+          <Button onClick={save} disabled={saving}>
+            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : saved ? <Check className="mr-2 h-4 w-4" /> : null}
+            {saved ? "Saved" : "Save changes"}
+          </Button>
         </div>
       </div>
 
-      {/* Sections */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold">Sections & items</h3>
-          <button onClick={addSection} className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted"><Plus className="h-3.5 w-3.5" /> Add section</button>
-        </div>
-        {menu.sections.map((sec) => (
-          <SectionCard key={sec.id} section={sec} groups={menu.groups} updateSection={updateSection} removeSection={removeSection} />
-        ))}
-      </div>
+      {/* ---------- preview: side panel on xl ---------- */}
+      <aside className="hidden w-[400px] shrink-0 xl:sticky xl:top-4 xl:block">
+        <MenuPreview menu={menu} />
+      </aside>
 
-      <div className="flex justify-end pb-8">
-        <Button onClick={save} disabled={saving}>
-          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : saved ? <Check className="mr-2 h-4 w-4" /> : null}
-          {saved ? "Saved" : "Save changes"}
-        </Button>
-      </div>
+      {/* ---------- preview: overlay on smaller screens ---------- */}
+      {previewOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 xl:hidden" onClick={() => setPreviewOpen(false)}>
+          <div className="absolute right-0 top-0 h-full w-full max-w-sm overflow-y-auto bg-background p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="font-semibold">Preview</h3>
+              <button onClick={() => setPreviewOpen(false)} className="rounded-md border p-1 hover:bg-muted"><X className="h-4 w-4" /></button>
+            </div>
+            <MenuPreview menu={menu} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
