@@ -18,6 +18,7 @@ model Merchant {
   webhookUsername  String    @default("")
   webhookPassword  String    @default("")
   siteUrl          String?
+  disabledTabs     String[]  @default([])
   sanityStudioUrl  String?
   inviteToken     String?   @unique
   inviteExpiry    DateTime?
