@@ -100,9 +100,8 @@ const ItemRow = memo(function ItemRow({
       <div className="flex gap-2">
         <Input className="flex-1" placeholder="Item name" value={item.name} onChange={(e) => onChange({ ...item, name: e.target.value })} />
         {variants.length === 0 && (
-          <Input className="w-24" placeholder="Price" inputMode="decimal" value={String(item.price ?? "")} onChange={(e) => onChange({ ...item, price: e.target.value === "" ? 0 : Number(e.target.value) || 0 })} />
+          <Input className="w-28" placeholder="Price" inputMode="decimal" value={String(item.price ?? "")} onChange={(e) => onChange({ ...item, price: e.target.value === "" ? 0 : Number(e.target.value) || 0 })} />
         )}
-        <Input className="w-20" placeholder="No." value={item.itemNumber} onChange={(e) => onChange({ ...item, itemNumber: e.target.value })} />
         <button onClick={() => { if (confirmDelete(`item "${item.name || "untitled"}"`)) onRemove() }} className="shrink-0 rounded-md border px-2 hover:bg-muted" title="Remove item">
           <Trash2 className="h-3.5 w-3.5 text-destructive" />
         </button>
