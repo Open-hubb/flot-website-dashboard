@@ -49,9 +49,10 @@ interface SidebarProps {
   merchantType: "QR_ONLY" | "WEBSITE"
   businessName: string
   isMenu?: boolean
+  disabledTabs?: string[]
 }
 
-export function Sidebar({ merchantType, businessName, isMenu = false }: SidebarProps) {
+export function Sidebar({ merchantType, businessName, isMenu = false, disabledTabs = [] }: SidebarProps) {
   const pathname = usePathname()
   const isWebsite = merchantType === "WEBSITE"
 
@@ -83,6 +84,21 @@ export function Sidebar({ merchantType, businessName, isMenu = false }: SidebarP
           const Icon = item.icon
           const isActive =
             item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
+          const isDisabled = disabledTabs.includes(item.href)
+
+          if (isDisabled) {
+            return (
+              <div
+                key={item.href}
+                aria-disabled="true"
+                title="Not available for this account"
+                className="flex cursor-not-allowed items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/30"
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                {item.label}
+              </div>
+            )
+          }
 
           return (
             <Link

@@ -15,7 +15,7 @@ export default async function DashboardLayout({
 
   const merchant = await db.merchant.findUnique({
     where: { id: session.user.id },
-    select: { type: true, businessName: true, name: true, menuContent: { select: { id: true } } },
+    select: { type: true, businessName: true, name: true, disabledTabs: true, menuContent: { select: { id: true } } },
   })
 
   if (!merchant) redirect("/login")
@@ -32,7 +32,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar merchantType={merchant.type} businessName={merchant.businessName} isMenu={isMenu} />
+      <Sidebar merchantType={merchant.type} businessName={merchant.businessName} isMenu={isMenu} disabledTabs={merchant.disabledTabs} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header
           title={pageTitle}
