@@ -7,7 +7,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { APP_URL } from "@/lib/app-url"
 import type { SiteContentData } from "@/lib/site-content"
-import { Loader2, Plus, Trash2, Check, Copy, ChevronDown, Upload } from "lucide-react"
+import { Loader2, Plus, Trash2, Check, Copy, ChevronDown, Upload, Eye, X } from "lucide-react"
+
+// Confirm before any destructive delete (guards against mis-clicks).
+function confirmDelete(what: string) {
+  return typeof window === "undefined" || window.confirm(`Delete ${what}? This can't be undone.`)
+}
 
 /* ---------- small building blocks ---------- */
 
@@ -68,6 +73,104 @@ function StringList({ label, items, onChange }: { label: string; items: string[]
   )
 }
 
+/* ---------- live preview (reflects unsaved edits) ---------- */
+
+function SiteContentPreview({ c }: { c: SiteContentData }) {
+  return (
+    <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+      <div className="border-b bg-muted/30 px-4 py-2 text-[11px] font-medium text-muted-foreground">
+        Live preview — reflects unsaved changes
+      </div>
+      <div className="max-h-[calc(100vh-9rem)] space-y-6 overflow-y-auto p-4 text-sm">
+        {/* Hero */}
+        <section className="text-center">
+          {c.hero.badge && <div className="mb-1 text-[10px] uppercase tracking-widest text-primary">{c.hero.badge}</div>}
+          <div className="text-xl font-bold leading-tight">{c.hero.title || "Hero title"}</div>
+          {c.hero.subtitle && <p className="mt-1 text-xs text-muted-foreground">{c.hero.subtitle}</p>}
+          {c.hero.ctaText && <span className="mt-2 inline-block rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">{c.hero.ctaText}</span>}
+        </section>
+
+        {/* Marquee */}
+        {c.marquee.primary.length > 0 && (
+          <div className="flex flex-wrap gap-1 border-y py-2 text-[10px] text-muted-foreground">
+            {c.marquee.primary.map((w, i) => <span key={i} className="rounded bg-muted px-1.5 py-0.5">{w}</span>)}
+          </div>
+        )}
+
+        {/* About */}
+        {(c.about.title || c.about.body || c.about.image || c.about.stats.length > 0) && (
+          <section className="space-y-2">
+            {c.about.eyebrow && <div className="text-[10px] uppercase tracking-widest text-primary">{c.about.eyebrow}</div>}
+            {c.about.title && <div className="font-semibold">{c.about.title}</div>}
+            {c.about.image && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={c.about.image} alt="" className="h-24 w-full rounded-md object-cover" />
+            )}
+            {c.about.body && <p className="whitespace-pre-line text-xs text-muted-foreground">{c.about.body}</p>}
+            {c.about.stats.length > 0 && (
+              <div className="flex gap-4 pt-1">
+                {c.about.stats.map((s, i) => (
+                  <div key={i}><div className="font-bold">{s.value}</div><div className="text-[10px] text-muted-foreground">{s.label}</div></div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Services */}
+        {c.services.length > 0 && (
+          <section className="space-y-2">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">Services</div>
+            {c.services.map((sv, i) => (
+              <div key={i} className="rounded-md border p-2">
+                <div className="font-medium">{sv.title}</div>
+                {sv.subtitle && <div className="text-[11px] text-muted-foreground">{sv.subtitle}</div>}
+                {sv.items.length > 0 && (
+                  <ul className="mt-1 list-inside list-disc text-xs text-muted-foreground">
+                    {sv.items.map((it, j) => <li key={j}>{it}</li>)}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </section>
+        )}
+
+        {/* Testimonials */}
+        {c.testimonials.length > 0 && (
+          <section className="space-y-2">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">Testimonials</div>
+            {c.testimonials.map((t, i) => (
+              <blockquote key={i} className="rounded-md border p-2 text-xs">
+                <p className="italic">&ldquo;{t.quote}&rdquo;</p>
+                <footer className="mt-1 text-muted-foreground">{t.name}{t.role ? ` — ${t.role}` : ""}</footer>
+              </blockquote>
+            ))}
+          </section>
+        )}
+
+        {/* Contact */}
+        {(c.contact.address || c.contact.phone || c.contact.email || c.contact.hours) && (
+          <section className="space-y-1">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">Contact</div>
+            {c.contact.address && <div className="text-xs text-muted-foreground">{c.contact.address}</div>}
+            {c.contact.phone && <div className="text-xs text-muted-foreground">{c.contact.phone}</div>}
+            {c.contact.email && <div className="text-xs text-muted-foreground">{c.contact.email}</div>}
+            {c.contact.hours && <div className="text-xs text-muted-foreground">{c.contact.hours}</div>}
+          </section>
+        )}
+
+        {/* Footer */}
+        {(c.footer.tagline || c.footer.email) && (
+          <section className="border-t pt-2 text-center text-[11px] text-muted-foreground">
+            {c.footer.tagline && <div>{c.footer.tagline}</div>}
+            {c.footer.email && <div>{c.footer.email}</div>}
+          </section>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /* ---------- main editor ---------- */
 
 export function SiteContentEditor({ flotMerchantId, initialContent }: { flotMerchantId: string; initialContent: SiteContentData }) {
@@ -78,6 +181,7 @@ export function SiteContentEditor({ flotMerchantId, initialContent }: { flotMerc
   const [error, setError] = useState("")
   const [copied, setCopied] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const apiUrl = `${APP_URL}/api/public/site-content/${flotMerchantId}`
 
@@ -100,17 +204,23 @@ export function SiteContentEditor({ flotMerchantId, initialContent }: { flotMerc
   }
 
   return (
-    <div className="space-y-5 max-w-3xl">
+    <div className="xl:flex xl:items-start xl:gap-6">
+      <div className="min-w-0 flex-1 space-y-5 xl:max-w-3xl">
       {/* Header / save */}
-      <div className="sticky top-0 z-10 -mx-6 flex items-center justify-between border-b bg-background/90 px-6 py-3 backdrop-blur">
-        <div>
+      <div className="sticky top-0 z-20 -mx-6 flex items-center justify-between gap-3 border-b bg-background/90 px-6 py-3 backdrop-blur">
+        <div className="min-w-0">
           <h2 className="text-lg font-semibold">Website Content</h2>
-          <p className="text-xs text-muted-foreground">Edit your site — changes go live after you save</p>
+          <p className="truncate text-xs text-muted-foreground">Edit your site — changes go live after you save</p>
         </div>
-        <Button onClick={save} disabled={saving}>
-          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : saved ? <Check className="mr-2 h-4 w-4" /> : null}
-          {saved ? "Saved" : "Save changes"}
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button onClick={() => setPreviewOpen(true)} className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium hover:bg-muted xl:hidden">
+            <Eye className="h-3.5 w-3.5" /> Preview
+          </button>
+          <Button onClick={save} disabled={saving}>
+            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : saved ? <Check className="mr-2 h-4 w-4" /> : null}
+            {saved ? "Saved" : "Save changes"}
+          </Button>
+        </div>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -159,7 +269,7 @@ export function SiteContentEditor({ flotMerchantId, initialContent }: { flotMerc
             <div key={i} className="flex gap-2">
               <Input placeholder="300+" value={st.value} onChange={(e) => setC({ ...c, about: { ...c.about, stats: c.about.stats.map((x, j) => j === i ? { ...x, value: e.target.value } : x) } })} />
               <Input placeholder="Happy Clients" value={st.label} onChange={(e) => setC({ ...c, about: { ...c.about, stats: c.about.stats.map((x, j) => j === i ? { ...x, label: e.target.value } : x) } })} />
-              <button onClick={() => setC({ ...c, about: { ...c.about, stats: c.about.stats.filter((_, j) => j !== i) } })} className="shrink-0 rounded-md border px-2 hover:bg-muted"><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
+              <button onClick={() => { if (confirmDelete("this stat")) setC({ ...c, about: { ...c.about, stats: c.about.stats.filter((_, j) => j !== i) } }) }} className="shrink-0 rounded-md border px-2 hover:bg-muted"><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
             </div>
           ))}
           <button onClick={() => setC({ ...c, about: { ...c.about, stats: [...c.about.stats, { value: "", label: "" }] } })} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add stat</button>
@@ -172,7 +282,7 @@ export function SiteContentEditor({ flotMerchantId, initialContent }: { flotMerc
           <div key={i} className="rounded-lg border p-3 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Service {i + 1}</span>
-              <button onClick={() => setC({ ...c, services: c.services.filter((_, j) => j !== i) })} className="rounded-md border px-2 py-1 hover:bg-muted"><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
+              <button onClick={() => { if (confirmDelete(`service "${sv.title || "untitled"}"`)) setC({ ...c, services: c.services.filter((_, j) => j !== i) }) }} className="rounded-md border px-2 py-1 hover:bg-muted"><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <Input placeholder="Title" value={sv.title} onChange={(e) => setC({ ...c, services: c.services.map((x, j) => j === i ? { ...x, title: e.target.value } : x) })} />
@@ -190,7 +300,7 @@ export function SiteContentEditor({ flotMerchantId, initialContent }: { flotMerc
           <div key={i} className="rounded-lg border p-3 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Review {i + 1}</span>
-              <button onClick={() => setC({ ...c, testimonials: c.testimonials.filter((_, j) => j !== i) })} className="rounded-md border px-2 py-1 hover:bg-muted"><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
+              <button onClick={() => { if (confirmDelete(`review from "${t.name || "untitled"}"`)) setC({ ...c, testimonials: c.testimonials.filter((_, j) => j !== i) }) }} className="rounded-md border px-2 py-1 hover:bg-muted"><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <Input placeholder="Name" value={t.name} onChange={(e) => setC({ ...c, testimonials: c.testimonials.map((x, j) => j === i ? { ...x, name: e.target.value } : x) })} />
@@ -238,6 +348,25 @@ export function SiteContentEditor({ flotMerchantId, initialContent }: { flotMerc
           {saved ? "Saved" : "Save changes"}
         </Button>
       </div>
+      </div>
+
+      {/* preview: side panel on xl */}
+      <aside className="hidden w-[400px] shrink-0 xl:sticky xl:top-4 xl:block">
+        <SiteContentPreview c={c} />
+      </aside>
+
+      {/* preview: overlay on smaller screens */}
+      {previewOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 xl:hidden" onClick={() => setPreviewOpen(false)}>
+          <div className="absolute right-0 top-0 h-full w-full max-w-sm overflow-y-auto bg-background p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="font-semibold">Preview</h3>
+              <button onClick={() => setPreviewOpen(false)} className="rounded-md border p-1 hover:bg-muted"><X className="h-4 w-4" /></button>
+            </div>
+            <SiteContentPreview c={c} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
