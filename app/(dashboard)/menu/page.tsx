@@ -11,7 +11,7 @@ export default async function MenuPage() {
 
   const merchant = await db.merchant.findUnique({
     where: { id: session.user.id },
-    select: { type: true, flotMerchantId: true },
+    select: { type: true, flotMerchantId: true, siteUrl: true },
   })
 
   if (merchant?.type !== "WEBSITE") {
@@ -31,6 +31,7 @@ export default async function MenuPage() {
   return (
     <MenuEditor
       flotMerchantId={merchant.flotMerchantId}
+      siteUrl={merchant.siteUrl ?? ""}
       initialContent={withMenuDefaults(row?.content)}
     />
   )
