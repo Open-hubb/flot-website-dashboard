@@ -1,13 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { APP_URL } from "@/lib/app-url"
 import type { SiteContentData } from "@/lib/site-content"
-import { Loader2, Plus, Trash2, Check, Copy, ChevronDown, Upload, Eye, X } from "lucide-react"
+import { Loader2, Plus, Trash2, Check, Copy, ChevronDown, Upload, Eye, X, ExternalLink } from "lucide-react"
 
 // Confirm before any destructive delete (guards against mis-clicks).
 function confirmDelete(what: string) {
@@ -73,107 +72,50 @@ function StringList({ label, items, onChange }: { label: string; items: string[]
   )
 }
 
-/* ---------- live preview (reflects unsaved edits) ---------- */
+/* ---------- live preview: the REAL site in an iframe, fed unsaved edits ---------- */
 
-function SiteContentPreview({ c }: { c: SiteContentData }) {
+// Embeds the merchant's actual website and streams the current (unsaved) content
+// to it via postMessage, so the preview is the real site — real design, exactly
+// as visitors see it — reflecting edits live before saving.
+function PreviewFrame({ siteUrl, content }: { siteUrl: string; content: SiteContentData }) {
+  const ref = useRef<HTMLIFrameElement>(null)
+  const origin = useMemo(() => { try { return new URL(siteUrl).origin } catch { return "" } }, [siteUrl])
+
+  const post = useCallback(() => {
+    const w = ref.current?.contentWindow
+    if (w && origin) w.postMessage({ source: "flot-dashboard", type: "site-content-preview", content }, origin)
+  }, [content, origin])
+
+  useEffect(() => { const t = setTimeout(post, 250); return () => clearTimeout(t) }, [post])
+  useEffect(() => {
+    function onMsg(e: MessageEvent) {
+      if (origin && e.origin === origin && e.data?.source === "flot-site" && e.data?.type === "preview-ready") post()
+    }
+    window.addEventListener("message", onMsg)
+    return () => window.removeEventListener("message", onMsg)
+  }, [origin, post])
+
+  if (!siteUrl) {
+    return (
+      <div className="rounded-xl border bg-card p-6 text-center text-xs text-muted-foreground">
+        Set the site URL to enable the live preview.
+      </div>
+    )
+  }
+
   return (
     <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
       <div className="border-b bg-muted/30 px-4 py-2 text-[11px] font-medium text-muted-foreground">
-        Live preview — reflects unsaved changes
+        Live preview — your real site, showing unsaved changes
       </div>
-      <div className="max-h-[calc(100vh-9rem)] space-y-6 overflow-y-auto p-4 text-sm">
-        {/* Hero */}
-        <section className="text-center">
-          {c.hero.badge && <div className="mb-1 text-[10px] uppercase tracking-widest text-primary">{c.hero.badge}</div>}
-          <div className="text-xl font-bold leading-tight">{c.hero.title || "Hero title"}</div>
-          {c.hero.subtitle && <p className="mt-1 text-xs text-muted-foreground">{c.hero.subtitle}</p>}
-          {c.hero.ctaText && <span className="mt-2 inline-block rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">{c.hero.ctaText}</span>}
-        </section>
-
-        {/* Marquee */}
-        {c.marquee.primary.length > 0 && (
-          <div className="flex flex-wrap gap-1 border-y py-2 text-[10px] text-muted-foreground">
-            {c.marquee.primary.map((w, i) => <span key={i} className="rounded bg-muted px-1.5 py-0.5">{w}</span>)}
-          </div>
-        )}
-
-        {/* About */}
-        {(c.about.title || c.about.body || c.about.image || c.about.stats.length > 0) && (
-          <section className="space-y-2">
-            {c.about.eyebrow && <div className="text-[10px] uppercase tracking-widest text-primary">{c.about.eyebrow}</div>}
-            {c.about.title && <div className="font-semibold">{c.about.title}</div>}
-            {c.about.image && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={c.about.image} alt="" className="h-24 w-full rounded-md object-cover" />
-            )}
-            {c.about.body && <p className="whitespace-pre-line text-xs text-muted-foreground">{c.about.body}</p>}
-            {c.about.stats.length > 0 && (
-              <div className="flex gap-4 pt-1">
-                {c.about.stats.map((s, i) => (
-                  <div key={i}><div className="font-bold">{s.value}</div><div className="text-[10px] text-muted-foreground">{s.label}</div></div>
-                ))}
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* Services */}
-        {c.services.length > 0 && (
-          <section className="space-y-2">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">Services</div>
-            {c.services.map((sv, i) => (
-              <div key={i} className="rounded-md border p-2">
-                <div className="font-medium">{sv.title}</div>
-                {sv.subtitle && <div className="text-[11px] text-muted-foreground">{sv.subtitle}</div>}
-                {sv.items.length > 0 && (
-                  <ul className="mt-1 list-inside list-disc text-xs text-muted-foreground">
-                    {sv.items.map((it, j) => <li key={j}>{it}</li>)}
-                  </ul>
-                )}
-              </div>
-            ))}
-          </section>
-        )}
-
-        {/* Testimonials */}
-        {c.testimonials.length > 0 && (
-          <section className="space-y-2">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">Testimonials</div>
-            {c.testimonials.map((t, i) => (
-              <blockquote key={i} className="rounded-md border p-2 text-xs">
-                <p className="italic">&ldquo;{t.quote}&rdquo;</p>
-                <footer className="mt-1 text-muted-foreground">{t.name}{t.role ? ` — ${t.role}` : ""}</footer>
-              </blockquote>
-            ))}
-          </section>
-        )}
-
-        {/* Contact */}
-        {(c.contact.address || c.contact.phone || c.contact.email || c.contact.hours) && (
-          <section className="space-y-1">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">Contact</div>
-            {c.contact.address && <div className="text-xs text-muted-foreground">{c.contact.address}</div>}
-            {c.contact.phone && <div className="text-xs text-muted-foreground">{c.contact.phone}</div>}
-            {c.contact.email && <div className="text-xs text-muted-foreground">{c.contact.email}</div>}
-            {c.contact.hours && <div className="text-xs text-muted-foreground">{c.contact.hours}</div>}
-          </section>
-        )}
-
-        {/* Footer */}
-        {(c.footer.tagline || c.footer.email) && (
-          <section className="border-t pt-2 text-center text-[11px] text-muted-foreground">
-            {c.footer.tagline && <div>{c.footer.tagline}</div>}
-            {c.footer.email && <div>{c.footer.email}</div>}
-          </section>
-        )}
-      </div>
+      <iframe ref={ref} src={siteUrl} title="Site preview" onLoad={post} className="h-[calc(100vh-9rem)] w-full bg-white" />
     </div>
   )
 }
 
 /* ---------- main editor ---------- */
 
-export function SiteContentEditor({ flotMerchantId, initialContent }: { flotMerchantId: string; initialContent: SiteContentData }) {
+export function SiteContentEditor({ siteUrl, initialContent }: { siteUrl?: string; initialContent: SiteContentData }) {
   const router = useRouter()
   const [c, setC] = useState<SiteContentData>(initialContent)
   const [saving, setSaving] = useState(false)
@@ -182,8 +124,6 @@ export function SiteContentEditor({ flotMerchantId, initialContent }: { flotMerc
   const [copied, setCopied] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
-
-  const apiUrl = `${APP_URL}/api/public/site-content/${flotMerchantId}`
 
   async function save() {
     setSaving(true); setError(""); setSaved(false)
@@ -225,12 +165,19 @@ export function SiteContentEditor({ flotMerchantId, initialContent }: { flotMerc
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-        <span className="shrink-0 font-medium text-foreground">Your website reads from:</span>
-        <code className="flex-1 truncate font-mono">{apiUrl}</code>
-        <button onClick={() => { navigator.clipboard.writeText(apiUrl); setCopied(true); setTimeout(() => setCopied(false), 1500) }} className="shrink-0 rounded p-1 hover:bg-muted">
-          {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-        </button>
+      <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs">
+        <span className="shrink-0 font-medium text-foreground">Your website:</span>
+        {siteUrl ? (
+          <>
+            <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="flex-1 truncate font-medium text-primary hover:underline">{siteUrl}</a>
+            <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded p-1 hover:bg-muted" title="Open site"><ExternalLink className="h-3.5 w-3.5 text-muted-foreground" /></a>
+            <button onClick={() => { navigator.clipboard.writeText(siteUrl); setCopied(true); setTimeout(() => setCopied(false), 1500) }} className="shrink-0 rounded p-1 hover:bg-muted" title="Copy link">
+              {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+            </button>
+          </>
+        ) : (
+          <span className="flex-1 truncate text-muted-foreground">website URL not set</span>
+        )}
       </div>
 
       {/* Hero */}
@@ -352,7 +299,7 @@ export function SiteContentEditor({ flotMerchantId, initialContent }: { flotMerc
 
       {/* preview: side panel on xl */}
       <aside className="hidden w-[400px] shrink-0 xl:sticky xl:top-4 xl:block">
-        <SiteContentPreview c={c} />
+        <PreviewFrame siteUrl={siteUrl ?? ""} content={c} />
       </aside>
 
       {/* preview: overlay on smaller screens */}
@@ -363,7 +310,7 @@ export function SiteContentEditor({ flotMerchantId, initialContent }: { flotMerc
               <h3 className="font-semibold">Preview</h3>
               <button onClick={() => setPreviewOpen(false)} className="rounded-md border p-1 hover:bg-muted"><X className="h-4 w-4" /></button>
             </div>
-            <SiteContentPreview c={c} />
+            <PreviewFrame siteUrl={siteUrl ?? ""} content={c} />
           </div>
         </div>
       )}

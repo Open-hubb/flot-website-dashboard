@@ -11,7 +11,7 @@ export default async function CmsPage() {
 
   const merchant = await db.merchant.findUnique({
     where: { id: session.user.id },
-    select: { type: true, flotMerchantId: true },
+    select: { type: true, siteUrl: true },
   })
 
   if (merchant?.type !== "WEBSITE") {
@@ -30,7 +30,7 @@ export default async function CmsPage() {
 
   return (
     <SiteContentEditor
-      flotMerchantId={merchant.flotMerchantId}
+      siteUrl={merchant.siteUrl ?? ""}
       initialContent={withDefaults(row?.content)}
     />
   )
