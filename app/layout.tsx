@@ -25,6 +25,7 @@ const satoshi = localFont({
 export const metadata: Metadata = {
   title: "Flot Merchant Dashboard",
   description: "Manage your Flot merchant account",
+  icons: { icon: "/flotlogo.png", apple: "/flotlogo.png" },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -29,5 +29,9 @@ export default withAuth(
 )
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // Skip Next internals and static asset files (images, fonts, etc.) so they
+  // serve directly instead of being auth-redirected.
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|txt|xml)$).*)",
+  ],
 }
