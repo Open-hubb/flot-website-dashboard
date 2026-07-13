@@ -1,9 +1,9 @@
 import { cn } from "@/lib/utils"
 
 /**
- * Flot brand mark — a rounded graphite tile with the mint "F", plus the
- * Satoshi wordmark. `variant="dark"` inverts (mint tile) for dark surfaces
- * like the sidebar; `variant="light"` is the native app-icon look.
+ * Flot brand logo — the official F-tile mark (public/flotlogo.png, transparent
+ * rounded corners) plus the Satoshi wordmark. `variant` sets the wordmark
+ * colour for the surface it sits on (dark sidebar vs light page).
  */
 export function FlotLogo({
   size = "md",
@@ -16,25 +16,14 @@ export function FlotLogo({
   showWordmark?: boolean
   className?: string
 }) {
-  const tile =
-    size === "lg" ? "h-11 w-11 rounded-xl text-2xl" : "h-8 w-8 rounded-[10px] text-lg"
+  const dim = size === "lg" ? 44 : 32
   const word = size === "lg" ? "text-3xl" : "text-xl"
-  const tileColors =
-    variant === "dark" ? "bg-primary text-[#1a1a1a]" : "bg-[#2a2a2a] text-primary"
   const wordColor = variant === "dark" ? "text-white" : "text-[#2a2a2a]"
 
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
-      <span
-        className={cn(
-          "flex shrink-0 items-center justify-center font-display font-black leading-none",
-          tile,
-          tileColors
-        )}
-        aria-hidden
-      >
-        F
-      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/flotlogo.png" alt="Flot" width={dim} height={dim} className="shrink-0" />
       {showWordmark && (
         <span className={cn("font-display font-bold leading-none tracking-tight", word, wordColor)}>
           Flot
