@@ -36,56 +36,66 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Flot brand type: Satoshi (display) → Inter (body) → JetBrains Mono (code/amounts) */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-satoshi), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/*
+ * Flot Design System — dashboard (Flot Business) tokens.
+ * In-app surfaces use SOLID mint, graphite, white and paper. The teal gradient
+ * is marketing/splash only and is not used here.
+ */
 :root {
-  --background: oklch(0.98 0 0);
-  --foreground: oklch(0.12 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.12 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.12 0 0);
+  --background: #f5f4ef;            /* Paper — default light background */
+  --foreground: #2a2a2a;           /* Graphite — primary text */
+  --card: #ffffff;
+  --card-foreground: #2a2a2a;
+  --popover: #ffffff;
+  --popover-foreground: #2a2a2a;
 
-  /* Flot teal #51bdce */
-  --primary: oklch(0.73 0.09 208);
-  --primary-foreground: oklch(1 0 0);
+  --primary: #80ffcc;              /* Mint Green — primary accent · CTAs · confirm */
+  --primary-foreground: #1a1a1a;   /* graphite text on mint */
 
-  --secondary: oklch(0.96 0.01 208);
-  --secondary-foreground: oklch(0.60 0.09 208);
-  --muted: oklch(0.96 0 0);
-  --muted-foreground: oklch(0.50 0 0);
+  --secondary: #f2f2f0;            /* grey-50 */
+  --secondary-foreground: #3d3d3d;
+  --muted: #f2f2f0;
+  --muted-foreground: #5c5c58;     /* grey-500 — accessible secondary text */
 
-  /* Flot mint #80ffdd */
-  --accent: oklch(0.93 0.10 168);
-  --accent-foreground: oklch(0.30 0.06 168);
+  --accent: #d6ffee;               /* mint-100 — subtle highlight surface */
+  --accent-foreground: #157657;    /* mint-700 */
 
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.91 0 0);
-  --input: oklch(0.91 0 0);
-  --ring: oklch(0.73 0.09 208);
+  --destructive: #c0382b;          /* Danger — true failures only */
+  --destructive-foreground: #ffffff;
 
-  --chart-1: oklch(0.73 0.09 208);
-  --chart-2: oklch(0.93 0.10 168);
-  --chart-3: oklch(0.65 0.12 220);
-  --chart-4: oklch(0.55 0.08 195);
-  --chart-5: oklch(0.82 0.07 180);
+  --border: #e6e6e3;               /* grey-100 */
+  --input: #e6e6e3;
+  --ring: #2ebf92;                 /* mint-500 — focus ring */
 
-  --radius: 0.5rem;
+  --chart-1: #2ebf92;              /* mint-500 */
+  --chart-2: #80ffcc;              /* mint-300 */
+  --chart-3: #1f9a75;              /* mint-600 */
+  --chart-4: #5ec9c9;              /* info teal */
+  --chart-5: #a9a9a4;              /* grey-300 */
 
-  /* Flot dark gray sidebar #3d3d3d */
-  --sidebar: oklch(0.27 0 0);
-  --sidebar-foreground: oklch(0.92 0 0);
-  --sidebar-primary: oklch(0.73 0.09 208);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.33 0 0);
-  --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(0.35 0 0);
-  --sidebar-ring: oklch(0.73 0.09 208);
+  --radius: 0.625rem;
+
+  /* Graphite dark sidebar with mint active state */
+  --sidebar: #2a2a2a;              /* grey-700 graphite */
+  --sidebar-foreground: #e6e6e3;
+  --sidebar-primary: #80ffcc;      /* mint active item */
+  --sidebar-primary-foreground: #1a1a1a;
+  --sidebar-accent: #3d3d3d;       /* hover */
+  --sidebar-accent-foreground: #fbfbfa;
+  --sidebar-border: #3d3d3d;
+  --sidebar-ring: #2ebf92;
 }
 
 * {
@@ -95,4 +105,16 @@
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
+}
+
+/* Headlines use the Satoshi display family (brand). */
+@layer base {
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+  /* Tabular numerals wherever amounts / codes appear. */
+  .font-mono {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
 }

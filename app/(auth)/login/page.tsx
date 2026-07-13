@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, Eye, EyeOff } from "lucide-react"
+import { FlotLogo } from "@/components/flot-logo"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -40,12 +41,9 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-8">
         {/* Logo */}
-        <div className="text-center">
-          <div className="inline-flex items-baseline">
-            <span className="text-4xl font-bold tracking-tight text-foreground">flot</span>
-            <span className="text-4xl font-bold text-primary">.</span>
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">Merchant Dashboard</p>
+        <div className="flex flex-col items-center text-center">
+          <FlotLogo size="lg" variant="light" />
+          <p className="mt-3 text-sm text-muted-foreground">Merchant Dashboard</p>
         </div>
 
         {/* Card */}
