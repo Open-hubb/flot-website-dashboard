@@ -105,6 +105,9 @@
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
+  /* Tabular, lining numerals throughout — money and metrics align in columns
+     (Flot brand rule). Purely visual; digit glyphs become equal-width. */
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 /* Headlines use the Satoshi display family (brand). */
