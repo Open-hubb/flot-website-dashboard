@@ -37,6 +37,10 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  /* Legible mint for links / accent text on light surfaces (mint-700). The
+     bright mint (--primary) is for button fills with dark text, not text. */
+  --color-link: #157657;
+
   /* Flot brand type: Satoshi (display) → Inter (body) → JetBrains Mono (code/amounts) */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-satoshi), var(--font-inter), ui-sans-serif, sans-serif;

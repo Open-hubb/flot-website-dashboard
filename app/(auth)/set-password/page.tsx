@@ -57,7 +57,7 @@ function SetPasswordContent() {
         <div className="text-center">
           <div className="inline-flex items-baseline">
             <span className="text-4xl font-bold tracking-tight text-foreground">flot</span>
-            <span className="text-4xl font-bold text-primary">.</span>
+            <span className="text-4xl font-bold text-link">.</span>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
             {isReset ? "Reset your password" : "Set up your account"}
@@ -67,7 +67,7 @@ function SetPasswordContent() {
         <div className="rounded-xl border bg-card p-8 shadow-sm">
           {done ? (
             <div className="flex flex-col items-center gap-3 py-4 text-center">
-              <CheckCircle className="h-10 w-10 text-primary" />
+              <CheckCircle className="h-10 w-10 text-link" />
               <p className="font-medium">Password set! Redirecting to login…</p>
             </div>
           ) : (

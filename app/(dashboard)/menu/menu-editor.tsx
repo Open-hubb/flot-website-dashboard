@@ -158,11 +158,11 @@ const ItemRow = memo(function ItemRow({
               <button onClick={() => onChange({ ...item, variants: variants.filter((_, j) => j !== vi) })} className="shrink-0 rounded-md border px-2 hover:bg-muted"><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
             </div>
           ))}
-          <button onClick={() => onChange({ ...item, variants: [...variants, { label: "", price: 0 }] })} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"><Plus className="h-3 w-3" /> Add option</button>
+          <button onClick={() => onChange({ ...item, variants: [...variants, { label: "", price: 0 }] })} className="inline-flex items-center gap-1 text-xs font-medium text-link hover:underline"><Plus className="h-3 w-3" /> Add option</button>
         </div>
       )}
       {variants.length === 0 && (
-        <button onClick={() => onChange({ ...item, variants: [{ label: "", price: item.price || 0 }] })} className="text-[11px] font-medium text-primary hover:underline">+ Use price options (Shot / Bottle…)</button>
+        <button onClick={() => onChange({ ...item, variants: [{ label: "", price: item.price || 0 }] })} className="text-[11px] font-medium text-link hover:underline">+ Use price options (Shot / Bottle…)</button>
       )}
     </div>
   )
@@ -228,7 +228,7 @@ const SectionCard = memo(function SectionCard({
               <ItemRow key={i} item={it} onChange={(next) => setItem(i, next)} onRemove={() => removeItem(i)} />
             ))}
             <button onClick={() => updateSection(section.id, (s) => ({ ...s, items: [...s.items, { name: "", price: 0, description: "", itemNumber: "", tags: [], subHeader: null, variants: [] }] }))}
-              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+              className="inline-flex items-center gap-1 text-xs font-medium text-link hover:underline">
               <Plus className="h-3.5 w-3.5" /> Add item
             </button>
           </div>
@@ -310,7 +310,7 @@ export function MenuEditor({ flotMerchantId, siteUrl, initialContent }: { flotMe
           <span className="shrink-0 font-medium text-foreground">Your live menu:</span>
           {siteUrl ? (
             <>
-              <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="flex-1 truncate font-medium text-primary hover:underline">{siteUrl}</a>
+              <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="flex-1 truncate font-medium text-link hover:underline">{siteUrl}</a>
               <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded p-1 hover:bg-muted" title="Open site"><ExternalLink className="h-3.5 w-3.5 text-muted-foreground" /></a>
               <button onClick={() => { navigator.clipboard.writeText(siteUrl); setCopied(true); setTimeout(() => setCopied(false), 1500) }} className="shrink-0 rounded p-1 hover:bg-muted" title="Copy link">
                 {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
@@ -368,7 +368,7 @@ export function MenuEditor({ flotMerchantId, siteUrl, initialContent }: { flotMe
                 <button onClick={() => { if (confirmDelete(`the "${g.label || "untitled"}" group`)) setMenu((m) => ({ ...m, groups: m.groups.filter((_, j) => j !== i) })) }} className="shrink-0 rounded-md border px-2 hover:bg-muted"><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
               </div>
             ))}
-            <button onClick={addGroup} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add group</button>
+            <button onClick={addGroup} className="inline-flex items-center gap-1 text-xs font-medium text-link hover:underline"><Plus className="h-3.5 w-3.5" /> Add group</button>
           </div>
         </div>
 
