@@ -37,3 +37,6 @@ yarn-error.log*
 next-env.d.ts
 
 .claude/
+
+# Internal design docs
+*.pdf
