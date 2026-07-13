@@ -64,7 +64,7 @@ function StringList({ label, items, onChange }: { label: string; items: string[]
             </button>
           </div>
         ))}
-        <button onClick={() => onChange([...items, ""])} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+        <button onClick={() => onChange([...items, ""])} className="inline-flex items-center gap-1 text-xs font-medium text-link hover:underline">
           <Plus className="h-3.5 w-3.5" /> Add
         </button>
       </div>
@@ -169,7 +169,7 @@ export function SiteContentEditor({ siteUrl, initialContent }: { siteUrl?: strin
         <span className="shrink-0 font-medium text-foreground">Your website:</span>
         {siteUrl ? (
           <>
-            <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="flex-1 truncate font-medium text-primary hover:underline">{siteUrl}</a>
+            <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="flex-1 truncate font-medium text-link hover:underline">{siteUrl}</a>
             <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded p-1 hover:bg-muted" title="Open site"><ExternalLink className="h-3.5 w-3.5 text-muted-foreground" /></a>
             <button onClick={() => { navigator.clipboard.writeText(siteUrl); setCopied(true); setTimeout(() => setCopied(false), 1500) }} className="shrink-0 rounded p-1 hover:bg-muted" title="Copy link">
               {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
@@ -219,7 +219,7 @@ export function SiteContentEditor({ siteUrl, initialContent }: { siteUrl?: strin
               <button onClick={() => { if (confirmDelete("this stat")) setC({ ...c, about: { ...c.about, stats: c.about.stats.filter((_, j) => j !== i) } }) }} className="shrink-0 rounded-md border px-2 hover:bg-muted"><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
             </div>
           ))}
-          <button onClick={() => setC({ ...c, about: { ...c.about, stats: [...c.about.stats, { value: "", label: "" }] } })} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add stat</button>
+          <button onClick={() => setC({ ...c, about: { ...c.about, stats: [...c.about.stats, { value: "", label: "" }] } })} className="inline-flex items-center gap-1 text-xs font-medium text-link hover:underline"><Plus className="h-3.5 w-3.5" /> Add stat</button>
         </div>
       </Section>
 
@@ -238,7 +238,7 @@ export function SiteContentEditor({ siteUrl, initialContent }: { siteUrl?: strin
             <StringList label="Items" items={sv.items} onChange={(items) => setC({ ...c, services: c.services.map((x, j) => j === i ? { ...x, items } : x) })} />
           </div>
         ))}
-        <button onClick={() => setC({ ...c, services: [...c.services, { title: "", subtitle: "", items: [] }] })} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add service</button>
+        <button onClick={() => setC({ ...c, services: [...c.services, { title: "", subtitle: "", items: [] }] })} className="inline-flex items-center gap-1 text-xs font-medium text-link hover:underline"><Plus className="h-3.5 w-3.5" /> Add service</button>
       </Section>
 
       {/* Testimonials */}
@@ -257,7 +257,7 @@ export function SiteContentEditor({ siteUrl, initialContent }: { siteUrl?: strin
               className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
           </div>
         ))}
-        <button onClick={() => setC({ ...c, testimonials: [...c.testimonials, { name: "", role: "", quote: "" }] })} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"><Plus className="h-3.5 w-3.5" /> Add review</button>
+        <button onClick={() => setC({ ...c, testimonials: [...c.testimonials, { name: "", role: "", quote: "" }] })} className="inline-flex items-center gap-1 text-xs font-medium text-link hover:underline"><Plus className="h-3.5 w-3.5" /> Add review</button>
       </Section>
 
       {/* Contact */}

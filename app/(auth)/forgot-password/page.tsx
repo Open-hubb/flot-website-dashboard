@@ -30,7 +30,7 @@ export default function ForgotPasswordPage() {
         <div className="text-center">
           <div className="inline-flex items-baseline">
             <span className="text-4xl font-bold tracking-tight text-foreground">flot</span>
-            <span className="text-4xl font-bold text-primary">.</span>
+            <span className="text-4xl font-bold text-link">.</span>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">Merchant Dashboard</p>
         </div>
@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
         <div className="rounded-xl border bg-card p-8 shadow-sm">
           {sent ? (
             <div className="flex flex-col items-center gap-3 py-4 text-center">
-              <MailCheck className="h-10 w-10 text-primary" />
+              <MailCheck className="h-10 w-10 text-link" />
               <p className="font-medium">Check your email</p>
               <p className="text-sm text-muted-foreground">
                 If an account exists for <span className="font-medium">{email}</span>, we&apos;ve sent a
@@ -78,7 +78,7 @@ export default function ForgotPasswordPage() {
         </div>
 
         <p className="text-center text-sm text-muted-foreground">
-          <Link href="/login" className="text-primary hover:underline">
+          <Link href="/login" className="text-link hover:underline">
             Back to sign in
           </Link>
         </p>

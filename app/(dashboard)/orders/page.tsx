@@ -157,7 +157,7 @@ export default async function OrdersPage({
                     <TableCell>
                       <Link
                         href={`/orders/${order.id}`}
-                        className="font-mono text-sm font-medium text-primary hover:underline"
+                        className="font-mono text-sm font-medium text-link hover:underline"
                       >
                         {order.reference ?? order.id.slice(-6).toUpperCase()}
                       </Link>

@@ -37,7 +37,7 @@ export default async function CustomersPage() {
         <div className="rounded-xl border bg-card p-6 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-              <Users className="h-5 w-5 text-primary" />
+              <Users className="h-5 w-5 text-link" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Payments</p>

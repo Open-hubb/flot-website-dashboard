@@ -368,7 +368,7 @@ function ImageField({
           {media.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-4">
               No media uploaded yet.{" "}
-              <Link href="/cms/media" className="text-primary underline">
+              <Link href="/cms/media" className="text-link underline">
                 Upload images
               </Link>
             </p>
