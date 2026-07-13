@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
+import { FlotLogo } from "@/components/flot-logo"
 
 interface NavItem {
   label: string
@@ -68,8 +69,7 @@ export function Sidebar({ merchantType, businessName, isMenu = false, disabledTa
     <aside className="flex h-screen w-60 flex-col bg-sidebar text-sidebar-foreground">
       {/* Logo */}
       <div className="flex h-16 items-center border-b border-sidebar-border px-6">
-        <span className="text-xl font-bold tracking-tight text-white">flot</span>
-        <span className="ml-1 text-xl font-bold text-primary">.</span>
+        <FlotLogo size="md" variant="dark" />
       </div>
 
       {/* Business name */}
