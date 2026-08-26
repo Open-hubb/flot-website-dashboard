@@ -136,15 +136,34 @@ export const menuContentSchema = z.object({
   sections: z.array(sectionSchema).default([]),
 })
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {}
+}
+
+function parseValue<T>(schema: z.ZodType<T>, value: unknown, fallback: T): T {
+  const parsed = schema.safeParse(value)
+  return parsed.success ? parsed.data : fallback
+}
+
+function parseArray<T>(schema: z.ZodType<T>, value: unknown): T[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((item) => {
+    const parsed = schema.safeParse(item)
+    return parsed.success ? [parsed.data] : []
+  })
+}
+
 // Ensure a stored value (possibly partial / from the site's own JSON) has every
 // key the editor and sites expect.
 export function withMenuDefaults(value: unknown): MenuContentData {
-  const v = (value ?? {}) as Partial<MenuContentData>
+  const v = asRecord(value)
   return {
-    version: typeof v.version === "number" ? v.version : 1,
-    lastModified: v.lastModified ?? "",
-    branding: { ...EMPTY_BRANDING, ...v.branding },
-    groups: Array.isArray(v.groups) ? v.groups : [],
-    sections: Array.isArray(v.sections) ? v.sections : [],
+    version: parseValue(z.coerce.number(), v.version, 1),
+    lastModified: parseValue(z.string(), v.lastModified, ""),
+    branding: parseValue(brandingSchema, v.branding, { ...EMPTY_BRANDING }),
+    groups: parseArray(groupSchema, v.groups),
+    sections: parseArray(sectionSchema, v.sections),
   }
 }
