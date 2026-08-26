@@ -59,13 +59,16 @@ export function CmsEditor({
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [saveMessage, setSaveMessage] = useState("")
+  const [error, setError] = useState("")
   const [showMediaPicker, setShowMediaPicker] = useState<string | null>(null)
   const autosaveTimer = useRef<NodeJS.Timeout | null>(null)
   const hasChanges = useRef(false)
 
-  const saveDraft = useCallback(async () => {
+  const saveDraft = useCallback(async (): Promise<boolean> => {
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
     setSaving(true)
     setSaveMessage("")
+    setError("")
     try {
       const res = await fetch(`/api/cms/pages/${slug}`, {
         method: "PUT",
@@ -77,15 +80,22 @@ export function CmsEditor({
         setSaveMessage("Draft saved")
         hasChanges.current = false
         setTimeout(() => setSaveMessage(""), 3000)
+        return true
       }
+      setError("Couldn’t save the draft. Please try again.")
+      return false
+    } catch {
+      setError("Couldn’t save the draft. Check your connection and try again.")
+      return false
     } finally {
       setSaving(false)
     }
   }, [slug, title, blocks])
 
   const publish = async () => {
-    await saveDraft()
+    if (!await saveDraft()) return
     setPublishing(true)
+    setError("")
     try {
       const res = await fetch(`/api/cms/pages/${slug}`, {
         method: "POST",
@@ -97,7 +107,11 @@ export function CmsEditor({
         setSaveMessage("Published!")
         setTimeout(() => setSaveMessage(""), 3000)
         router.refresh()
+      } else {
+        setError("Couldn’t publish the page. Your draft is still saved.")
       }
+    } catch {
+      setError("Couldn’t publish the page. Your draft is still saved.")
     } finally {
       setPublishing(false)
     }
@@ -161,6 +175,7 @@ export function CmsEditor({
               {saveMessage}
             </span>
           )}
+          {error && <span className="text-xs font-medium text-destructive">{error}</span>}
           <span
             className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
               status === "PUBLISHED"
