@@ -10,13 +10,12 @@ export async function updateProfile(formData: FormData) {
   if (!session?.user?.id) return { error: "Unauthorized" }
 
   const name = (formData.get("name") as string | null)?.trim()
-  const businessName = (formData.get("businessName") as string | null)?.trim()
 
-  if (!name || !businessName) return { error: "Name and business name are required" }
+  if (!name) return { error: "Name is required" }
 
   await db.merchant.update({
     where: { id: session.user.id },
-    data: { name, businessName },
+    data: { name },
   })
   revalidatePath("/settings")
   return { success: true }
