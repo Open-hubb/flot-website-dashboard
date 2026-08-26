@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { Resend } from "resend"
 import { z } from "zod"
+import { Prisma } from "@prisma/client"
 import { safeEqual } from "@/lib/crypto"
 import { APP_URL } from "@/lib/app-url"
 
@@ -14,6 +15,10 @@ const payloadSchema = z.object({
   amount: z.union([z.string(), z.number()]).optional(),
   currency: z.string().optional(),
 })
+
+function isUniqueViolation(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002"
+}
 
 export async function POST(
   req: NextRequest,
@@ -51,66 +56,113 @@ export async function POST(
   const { orderId, flotRequestId, status, amount, currency } = parsed.data
   const amountNum =
     amount != null && !Number.isNaN(Number(amount)) ? Number(amount) : undefined
+  let completionRecorded = false
 
   if (status === "completed") {
-    await db.order.upsert({
-      where: { flotRequestId },
-      update: { status: "COMPLETED", ...(amountNum != null ? { amount: amountNum } : {}), ...(currency ? { currency } : {}) },
-      create: {
-        merchantId: merchant.id,
-        orderId,
-        flotRequestId,
-        status: "COMPLETED",
-        amount: amountNum,
-        currency: currency,
-        rawPayload: body,
-      },
+    const completedData = {
+      status: "COMPLETED" as const,
+      ...(amountNum != null ? { amount: amountNum } : {}),
+      ...(currency ? { currency } : {}),
+    }
+
+    completionRecorded = await db.$transaction(async (tx) => {
+      const updated = await tx.order.updateMany({
+        where: {
+          flotRequestId,
+          merchantId: merchant.id,
+          status: { not: "COMPLETED" },
+        },
+        data: completedData,
+      })
+      if (updated.count > 0) return true
+
+      try {
+        await tx.order.create({
+          data: {
+            merchantId: merchant.id,
+            orderId,
+            flotRequestId,
+            ...completedData,
+            rawPayload: body,
+          },
+        })
+        return true
+      } catch (error) {
+        if (!isUniqueViolation(error)) throw error
+
+        // A concurrent delivery may have created this event. Only update the
+        // matching merchant's transaction; never use the globally-unique
+        // request id to touch another merchant's record.
+        const existing = await tx.order.findFirst({
+          where: { flotRequestId, merchantId: merchant.id },
+          select: { id: true },
+        })
+        if (!existing) throw error
+
+        await tx.order.update({ where: { id: existing.id }, data: completedData })
+        return false
+      }
     })
 
-    // Link to the most recent unmatched customer order from this merchant (within 30 min)
-    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000)
-    const pendingCustomerOrder = await db.customerOrder.findFirst({
-      where: {
-        merchantId: merchant.id,
-        flotRequestId: null,
-        status: "PENDING",
-        createdAt: { gte: thirtyMinAgo },
-      },
-      orderBy: { createdAt: "desc" },
-    })
-    if (pendingCustomerOrder) {
-      await db.customerOrder.update({
-        where: { id: pendingCustomerOrder.id },
-        data: {
-          flotRequestId,
-          status: "PAID",
-          events: {
-            create: {
-              fromStatus: "PENDING",
-              toStatus: "PAID",
-              changedBy: "flot-webhook",
-              note: "Payment confirmed by Flot",
+    if (completionRecorded) {
+      // Link to the most recent unmatched customer order from this merchant (within 30 min)
+      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000)
+      const pendingCustomerOrder = await db.customerOrder.findFirst({
+        where: {
+          merchantId: merchant.id,
+          flotRequestId: null,
+          status: "PENDING",
+          createdAt: { gte: thirtyMinAgo },
+        },
+        orderBy: { createdAt: "desc" },
+      })
+      if (pendingCustomerOrder) {
+        await db.customerOrder.update({
+          where: { id: pendingCustomerOrder.id },
+          data: {
+            flotRequestId,
+            status: "PAID",
+            events: {
+              create: {
+                fromStatus: "PENDING",
+                toStatus: "PAID",
+                changedBy: "flot-webhook",
+                note: "Payment confirmed by Flot",
+              },
             },
           },
-        },
-      })
+        })
+      }
     }
   } else {
-    // failed = customer can retry, leave as PENDING
-    await db.order.upsert({
-      where: { flotRequestId },
-      update: { status: "PENDING" },
-      create: {
-        merchantId: merchant.id,
-        orderId,
+    // Failed payments remain pending so the customer can retry, but a late
+    // failed delivery must never overwrite an already completed payment.
+    const updated = await db.order.updateMany({
+      where: {
         flotRequestId,
-        status: "PENDING",
-        rawPayload: body,
+        merchantId: merchant.id,
+        status: { not: "COMPLETED" },
       },
+      data: { status: "PENDING" },
     })
+    if (updated.count === 0) {
+      try {
+        await db.order.create({
+          data: {
+            merchantId: merchant.id,
+            orderId,
+            flotRequestId,
+            status: "PENDING",
+            rawPayload: body,
+          },
+        })
+      } catch (error) {
+        if (!isUniqueViolation(error)) throw error
+      }
+    }
   }
 
-  if (status === "completed") {
+  if (completionRecorded) {
     const amountDisplay = ""
 
     await db.inAppNotification.create({
