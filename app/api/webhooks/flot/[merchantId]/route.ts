@@ -26,7 +26,7 @@ export async function POST(
 ) {
   const merchant = await db.merchant.findUnique({
     where: { flotMerchantId: params.merchantId },
-    select: { id: true, email: true, name: true, businessName: true, webhookUsername: true, webhookPassword: true },
+    select: { id: true, email: true, name: true, businessName: true, type: true, webhookUsername: true, webhookPassword: true },
   })
 
   if (!merchant) return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -57,6 +57,7 @@ export async function POST(
   const amountNum =
     amount != null && !Number.isNaN(Number(amount)) ? Number(amount) : undefined
   let completionRecorded = false
+  let customerOrderLinked = false
 
   if (status === "completed") {
     const completedData = {
@@ -95,36 +96,35 @@ export async function POST(
       }
     }
 
-    if (completionRecorded) {
-      // Link to the most recent unmatched customer order from this merchant (within 30 min)
-      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000)
-      const pendingCustomerOrder = await db.customerOrder.findFirst({
+    customerOrderLinked = await db.$transaction(async (tx) => {
+      // Flot returns the merchant's original order ID. Only mark the customer
+      // order paid when that ID matches exactly; a time-window match can
+      // otherwise assign one customer's payment to another customer's order.
+      const linkedCustomerOrder = await db.customerOrder.updateMany({
         where: {
           merchantId: merchant.id,
+          id: orderId,
           flotRequestId: null,
           status: "PENDING",
-          createdAt: { gte: thirtyMinAgo },
         },
-        orderBy: { createdAt: "desc" },
+        data: {
+          flotRequestId,
+          status: "PAID",
+        },
       })
-      if (pendingCustomerOrder) {
-        await db.customerOrder.update({
-          where: { id: pendingCustomerOrder.id },
+      if (linkedCustomerOrder.count === 1) {
+        await db.customerOrderEvent.create({
           data: {
-            flotRequestId,
-            status: "PAID",
-            events: {
-              create: {
-                fromStatus: "PENDING",
-                toStatus: "PAID",
-                changedBy: "flot-webhook",
-                note: "Payment confirmed by Flot",
-              },
-            },
+            customerOrderId: orderId,
+            fromStatus: "PENDING",
+            toStatus: "PAID",
+            changedBy: "flot-webhook",
+            note: "Payment confirmed by Flot",
           },
         })
       }
-    }
+      return linkedCustomerOrder.count === 1
+    })
   } else {
     // Failed payments remain pending so the customer can retry, but a late
     // failed delivery must never overwrite an already completed payment.
@@ -160,8 +160,10 @@ export async function POST(
       data: {
         merchantId: merchant.id,
         type: "ORDER_COMPLETED",
-        title: "Payment received",
-        body: `Order #${orderId}${amountDisplay ? ` · ${amountDisplay}` : ""} has been paid successfully.`,
+        title: customerOrderLinked || merchant.type !== "WEBSITE" ? "Payment received" : "Payment needs order review",
+        body: customerOrderLinked || merchant.type !== "WEBSITE"
+          ? `Order #${orderId}${amountDisplay ? ` · ${amountDisplay}` : ""} has been paid successfully.`
+          : `Payment #${orderId} was received but could not be matched to a website order. Review it before fulfillment.`,
       },
     })
 
