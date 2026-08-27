@@ -43,9 +43,21 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     )
   }
 
-  await db.$transaction([
-    db.customerOrder.update({ where: { id: order.id }, data: { status: nextStatus } }),
-    db.customerOrderEvent.create({
+  // Require the status we just checked to still be current. Without this guard,
+  // two simultaneous actions can both pass validation and leave an event trail
+  // that claims two different transitions happened from the same status.
+  const changed = await db.$transaction(async (tx) => {
+    const result = await tx.customerOrder.updateMany({
+      where: {
+        id: order.id,
+        merchantId: session.user.id,
+        status: order.status,
+      },
+      data: { status: nextStatus },
+    })
+    if (result.count === 0) return false
+
+    await tx.customerOrderEvent.create({
       data: {
         customerOrderId: order.id,
         fromStatus: order.status,
@@ -53,8 +65,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         changedBy: session.user.email ?? "merchant",
         note,
       },
-    }),
-  ])
+    })
+    return true
+  })
+
+  if (!changed) {
+    return NextResponse.json(
+      { error: "This order was updated elsewhere. Refresh and try again." },
+      { status: 409 }
+    )
+  }
 
   return NextResponse.json({ ok: true })
 }
