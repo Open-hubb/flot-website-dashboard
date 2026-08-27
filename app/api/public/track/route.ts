@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
+import { z } from "zod"
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -7,17 +8,23 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type",
 }
 
+const bodySchema = z.object({
+  merchantId: z.string().trim().min(1).max(100),
+  page: z.string().trim().min(1).max(500),
+  referrer: z.string().max(500).nullable().optional(),
+})
+
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS })
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
-  const { merchantId, page, referrer } = body ?? {}
-
-  if (!merchantId || !page) {
+  const parsed = bodySchema.safeParse(body)
+  if (!parsed.success) {
     return NextResponse.json({ error: "merchantId and page are required" }, { status: 400, headers: CORS })
   }
+  const { merchantId, page, referrer } = parsed.data
 
   const merchant = await db.merchant.findUnique({
     where: { flotMerchantId: merchantId },
@@ -31,8 +38,8 @@ export async function POST(req: NextRequest) {
   await db.websiteAnalyticsEvent.create({
     data: {
       merchantId: merchant.id,
-      page: String(page).slice(0, 500),
-      referrer: referrer ? String(referrer).slice(0, 500) : null,
+      page,
+      referrer: referrer || null,
     },
   })
 
