@@ -108,9 +108,9 @@ function Hero({ block }: { block: HeroBlock }) {
         {block.subtitle && (
           <p className="mx-auto mt-4 max-w-2xl text-lg opacity-90">{block.subtitle}</p>
         )}
-        {block.ctaText && (
+        {block.ctaText && block.ctaLink && (
           <a
-            href={block.ctaLink || "#"}
+            href={block.ctaLink}
             className="mt-8 inline-block rounded-lg bg-[#51bdce] px-6 py-3 text-sm font-semibold text-white hover:opacity-90"
           >
             {block.ctaText}
@@ -184,13 +184,15 @@ function Contact({ block }: { block: ContactBlock }) {
 }
 
 function Footer({ block }: { block: FooterBlock }) {
+  const links = block.links.filter((link) => link.label && link.url)
+
   return (
     <footer className="bg-neutral-900 px-6 py-12 text-neutral-300">
       <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 text-center">
-        {block.links.length > 0 && (
+        {links.length > 0 && (
           <nav className="flex flex-wrap justify-center gap-6 text-sm">
-            {block.links.map((link, i) => (
-              <a key={i} href={link.url || "#"} className="hover:text-white">
+            {links.map((link, i) => (
+              <a key={i} href={link.url} className="hover:text-white">
                 {link.label}
               </a>
             ))}
