@@ -3,20 +3,29 @@ import { db } from "@/lib/db"
 import { sendInviteEmail } from "@/lib/invite"
 import { getAdminCookieValue, ADMIN_COOKIE } from "@/lib/admin-auth"
 import { randomBytes } from "crypto"
+import { z } from "zod"
 
 function isAdmin(req: NextRequest) {
   return req.cookies.get(ADMIN_COOKIE)?.value === getAdminCookieValue()
 }
 
+const bodySchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  email: z.string().trim().email().max(320),
+  businessName: z.string().trim().min(1).max(200),
+  type: z.enum(["QR_ONLY", "WEBSITE"]),
+  flotMerchantId: z.string().trim().min(1).max(100),
+})
+
 export async function POST(req: NextRequest) {
   if (!isAdmin(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const body = await req.json().catch(() => null)
-  const { name, email, businessName, type, flotMerchantId } = body ?? {}
-
-  if (!name || !email || !businessName || !type || !flotMerchantId) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+  const parsed = bodySchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid merchant details" }, { status: 400 })
   }
+  const { name, email, businessName, type, flotMerchantId } = parsed.data
 
   const existing = await db.merchant.findUnique({ where: { email } })
   if (existing) {
