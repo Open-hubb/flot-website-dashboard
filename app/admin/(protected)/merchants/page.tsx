@@ -67,6 +67,8 @@ export default async function MerchantsPage() {
               merchants.map((m) => {
                 const invitePending = !!m.inviteToken
                 const inviteExpired = m.inviteExpiry && m.inviteExpiry < new Date()
+                // Still on the internal placeholder alias => not yet handed to the merchant.
+                const notHandedOver = /@openbankinghub\.io$/i.test(m.email)
 
                 return (
                   <tr key={m.id}>
@@ -86,8 +88,10 @@ export default async function MerchantsPage() {
                     <td className="px-4 py-3">
                       {invitePending ? (
                         <Badge variant={inviteExpired ? "destructive" : "secondary"}>
-                          {inviteExpired ? "Invite expired" : "Invite pending"}
+                          {inviteExpired ? "Invite expired" : "Invite sent"}
                         </Badge>
+                      ) : notHandedOver ? (
+                        <Badge variant="outline" className="text-muted-foreground">Not handed over</Badge>
                       ) : (
                         <Badge variant="default">Active</Badge>
                       )}
