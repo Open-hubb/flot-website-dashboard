@@ -24,31 +24,64 @@ export const EMPTY_CONTENT: SiteContentData = {
 }
 
 const s = () => z.string().default("")
-export const siteContentSchema = z.object({
-  hero: z.object({ badge: s(), title: s(), subtitle: s(), ctaText: s(), ctaLink: s() }).default(EMPTY_CONTENT.hero),
-  about: z.object({
-    eyebrow: s(), title: s(), body: s(), image: s(),
-    stats: z.array(z.object({ value: s(), label: s() })).default([]),
-  }).default(EMPTY_CONTENT.about),
-  services: z.array(z.object({ title: s(), subtitle: s(), items: z.array(z.string()).default([]) })).default([]),
-  testimonials: z.array(z.object({ name: s(), role: s(), quote: s() })).default([]),
-  contact: z.object({
-    address: s(), addressLink: s(), phone: s(), email: s(), hours: s(), whatsapp: s(), instagram: s(), mapEmbed: s(),
-  }).default(EMPTY_CONTENT.contact),
-  footer: z.object({ tagline: s(), email: s(), instagram: s() }).default(EMPTY_CONTENT.footer),
-  marquee: z.object({ primary: z.array(z.string()).default([]), secondary: z.array(z.string()).default([]) }).default(EMPTY_CONTENT.marquee),
+const statSchema = z.object({ value: s(), label: s() })
+const heroSchema = z.object({ badge: s(), title: s(), subtitle: s(), ctaText: s(), ctaLink: s() })
+const aboutSchema = z.object({ eyebrow: s(), title: s(), body: s(), image: s() })
+const serviceSchema = z.object({ title: s(), subtitle: s(), items: z.array(z.string()).default([]) })
+const testimonialSchema = z.object({ name: s(), role: s(), quote: s() })
+const contactSchema = z.object({
+  address: s(), addressLink: s(), phone: s(), email: s(), hours: s(), whatsapp: s(), instagram: s(), mapEmbed: s(),
 })
+const footerSchema = z.object({ tagline: s(), email: s(), instagram: s() })
+const marqueeSchema = z.object({ primary: z.array(z.string()).default([]), secondary: z.array(z.string()).default([]) })
+
+export const siteContentSchema = z.object({
+  hero: heroSchema.default(EMPTY_CONTENT.hero),
+  about: aboutSchema.extend({ stats: z.array(statSchema).default([]) }).default(EMPTY_CONTENT.about),
+  services: z.array(serviceSchema).default([]),
+  testimonials: z.array(testimonialSchema).default([]),
+  contact: contactSchema.default(EMPTY_CONTENT.contact),
+  footer: footerSchema.default(EMPTY_CONTENT.footer),
+  marquee: marqueeSchema.default(EMPTY_CONTENT.marquee),
+})
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {}
+}
+
+function parseObject<T>(schema: z.ZodType<T>, value: unknown, fallback: T): T {
+  const parsed = schema.safeParse(value)
+  return parsed.success ? parsed.data : fallback
+}
+
+function parseArray<T>(schema: z.ZodType<T>, value: unknown): T[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((item) => {
+    const parsed = schema.safeParse(item)
+    return parsed.success ? [parsed.data] : []
+  })
+}
 
 // Ensure a stored value (possibly partial / older shape) has every key.
 export function withDefaults(value: unknown): SiteContentData {
-  const v = (value ?? {}) as Partial<SiteContentData>
+  const v = asRecord(value)
+  const about = asRecord(v.about)
+  const marquee = asRecord(v.marquee)
   return {
-    hero: { ...EMPTY_CONTENT.hero, ...v.hero },
-    about: { ...EMPTY_CONTENT.about, ...v.about, stats: v.about?.stats ?? [] },
-    services: v.services ?? [],
-    testimonials: v.testimonials ?? [],
-    contact: { ...EMPTY_CONTENT.contact, ...v.contact },
-    footer: { ...EMPTY_CONTENT.footer, ...v.footer },
-    marquee: { ...EMPTY_CONTENT.marquee, ...v.marquee },
+    hero: parseObject(heroSchema, v.hero, { ...EMPTY_CONTENT.hero }),
+    about: {
+      ...parseObject(aboutSchema, v.about, { ...EMPTY_CONTENT.about }),
+      stats: parseArray(statSchema, about.stats),
+    },
+    services: parseArray(serviceSchema, v.services),
+    testimonials: parseArray(testimonialSchema, v.testimonials),
+    contact: parseObject(contactSchema, v.contact, { ...EMPTY_CONTENT.contact }),
+    footer: parseObject(footerSchema, v.footer, { ...EMPTY_CONTENT.footer }),
+    marquee: {
+      primary: parseArray(z.string(), marquee.primary),
+      secondary: parseArray(z.string(), marquee.secondary),
+    },
   }
 }
