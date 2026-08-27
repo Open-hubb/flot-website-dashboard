@@ -25,6 +25,11 @@ const FILTERS: ("" | CustomerOrderStatus)[] = ["", ...ALL_STATUSES]
 
 type OrderItem = { name: string; size?: string; qty: number }
 
+function parsePage(value: string | undefined) {
+  const page = Number(value)
+  return Number.isSafeInteger(page) && page > 0 ? page : 1
+}
+
 export default async function OrdersPage({
   searchParams,
 }: {
@@ -50,7 +55,7 @@ export default async function OrdersPage({
     )
   }
 
-  const page = Math.max(1, parseInt(searchParams.page ?? "1"))
+  const requestedPage = parsePage(searchParams.page)
   const rawStatus = searchParams.status ?? ""
   const status = (ALL_STATUSES as string[]).includes(rawStatus)
     ? (rawStatus as CustomerOrderStatus)
@@ -71,17 +76,15 @@ export default async function OrdersPage({
       : {}),
   }
 
-  const [orders, total] = await Promise.all([
-    db.customerOrder.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-    }),
-    db.customerOrder.count({ where }),
-  ])
-
+  const total = await db.customerOrder.count({ where })
   const totalPages = Math.ceil(total / PAGE_SIZE)
+  const page = totalPages > 0 ? Math.min(requestedPage, totalPages) : 1
+  const orders = await db.customerOrder.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
+  })
   const qs = (extra: Record<string, string | number | undefined>) => {
     const p = new URLSearchParams()
     if (status) p.set("status", status)
@@ -103,7 +106,7 @@ export default async function OrdersPage({
             href={s ? `/orders?status=${s}` : "/orders"}
             className={cn(
               "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              rawStatus === s
+              (status ?? "") === s
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:text-foreground"
             )}

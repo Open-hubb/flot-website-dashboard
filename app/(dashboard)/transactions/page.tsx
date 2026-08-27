@@ -26,6 +26,11 @@ const BADGE_VARIANT: Record<OrderStatus, "default" | "secondary" | "destructive"
   FAILED: "destructive",
 }
 
+function parsePage(value: string | undefined) {
+  const page = Number(value)
+  return Number.isSafeInteger(page) && page > 0 ? page : 1
+}
+
 export default async function TransactionsPage({
   searchParams,
 }: {
@@ -34,7 +39,7 @@ export default async function TransactionsPage({
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
 
-  const page = Math.max(1, parseInt(searchParams.page ?? "1"))
+  const requestedPage = parsePage(searchParams.page)
   const rawStatus = searchParams.status ?? ""
   const status =
     rawStatus && ["COMPLETED", "PENDING", "FAILED"].includes(rawStatus)
@@ -43,17 +48,15 @@ export default async function TransactionsPage({
 
   const where = { merchantId: session.user.id, ...(status ? { status } : {}) }
 
-  const [orders, total] = await Promise.all([
-    db.order.findMany({
-      where,
-      orderBy: { receivedAt: "desc" },
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-    }),
-    db.order.count({ where }),
-  ])
-
+  const total = await db.order.count({ where })
   const totalPages = Math.ceil(total / PAGE_SIZE)
+  const page = totalPages > 0 ? Math.min(requestedPage, totalPages) : 1
+  const orders = await db.order.findMany({
+    where,
+    orderBy: { receivedAt: "desc" },
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
+  })
 
   function filterHref(s: string) {
     return s ? `/transactions?status=${s}` : "/transactions"
@@ -72,7 +75,7 @@ export default async function TransactionsPage({
             href={filterHref(s)}
             className={cn(
               "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              rawStatus === s
+              (status ?? "") === s
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:text-foreground"
             )}
