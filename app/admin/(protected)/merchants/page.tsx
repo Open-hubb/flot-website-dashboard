@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Plus } from "lucide-react"
-import { ResendInviteButton, DeleteMerchantButton, WebhookCredentialsButton } from "./merchant-actions"
+import { ResendInviteButton, DeleteMerchantButton, WebhookCredentialsButton, EditMerchantButton } from "./merchant-actions"
 
 export default async function MerchantsPage() {
   await requireAdmin()
@@ -102,6 +102,7 @@ export default async function MerchantsPage() {
                           password={m.webhookPassword}
                           flotMerchantId={m.flotMerchantId}
                         />
+                        <EditMerchantButton merchantId={m.id} email={m.email} name={m.name} />
                         <ResendInviteButton merchantId={m.id} email={m.email} />
                         <DeleteMerchantButton merchantId={m.id} businessName={m.businessName} />
                       </div>

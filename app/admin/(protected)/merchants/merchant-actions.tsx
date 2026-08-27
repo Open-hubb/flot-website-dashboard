@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { Loader2, Mail, Trash2, Copy, Check, KeyRound } from "lucide-react"
+import { Loader2, Mail, Trash2, Copy, Check, KeyRound, Pencil } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -12,8 +12,120 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 import { APP_URL } from "@/lib/app-url"
+
+// Edit a merchant's email + name (for handover to the real merchant), then
+// send them a set-password invite so they choose their own password.
+export function EditMerchantButton({
+  merchantId,
+  email: initialEmail,
+  name: initialName,
+}: {
+  merchantId: string
+  email: string
+  name: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [email, setEmail] = useState(initialEmail)
+  const [name, setName] = useState(initialName)
+  const [saving, setSaving] = useState(false)
+  const [inviting, setInviting] = useState(false)
+  const [status, setStatus] = useState<{ kind: "idle" | "saved" | "invited" | "error"; msg?: string }>({ kind: "idle" })
+  const router = useRouter()
+
+  const dirty = email.trim() !== initialEmail || name.trim() !== initialName
+
+  async function save(): Promise<boolean> {
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setStatus({ kind: "error", msg: "Enter a valid email." })
+      return false
+    }
+    setSaving(true)
+    setStatus({ kind: "idle" })
+    const res = await fetch(`/api/admin/merchants/${merchantId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim(), name: name.trim() }),
+    })
+    setSaving(false)
+    if (res.ok) {
+      setStatus({ kind: "saved", msg: "Saved." })
+      router.refresh()
+      return true
+    }
+    const data = await res.json().catch(() => ({}))
+    setStatus({ kind: "error", msg: data.error ?? "Couldn't save." })
+    return false
+  }
+
+  async function saveAndInvite() {
+    // Persist any email/name change first, then send the set-password invite.
+    if (dirty) {
+      const ok = await save()
+      if (!ok) return
+    }
+    setInviting(true)
+    setStatus({ kind: "idle" })
+    const res = await fetch(`/api/admin/merchants/${merchantId}/invite`, { method: "POST" })
+    setInviting(false)
+    if (res.ok) {
+      setStatus({ kind: "invited", msg: `Invite sent to ${email.trim()}.` })
+      router.refresh()
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setStatus({ kind: "error", msg: data.error ?? "Invite failed to send." })
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <button
+        onClick={() => { setEmail(initialEmail); setName(initialName); setStatus({ kind: "idle" }); setOpen(true) }}
+        className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+        Edit
+      </button>
+
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit merchant</DialogTitle>
+          <DialogDescription>
+            Set the merchant&apos;s real email, then send a set-password invite so they choose their own password.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 py-1">
+          <div className="space-y-1.5">
+            <Label htmlFor="m-name">Name</Label>
+            <Input id="m-name" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="m-email">Email</Label>
+            <Input id="m-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="owner@business.com" />
+          </div>
+          {status.kind !== "idle" && (
+            <p className={status.kind === "error" ? "text-sm text-destructive" : "text-sm text-link"}>{status.msg}</p>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={save} disabled={saving || inviting || !dirty}>
+            {saving ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+            Save
+          </Button>
+          <Button onClick={saveAndInvite} disabled={saving || inviting}>
+            {inviting ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Mail className="mr-2 h-3.5 w-3.5" />}
+            {dirty ? "Save & send invite" : "Send invite"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 function CopyField({ label, value, mono = true }: { label: string; value: string; mono?: boolean }) {
   const [copied, setCopied] = useState(false)
