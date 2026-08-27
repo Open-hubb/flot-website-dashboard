@@ -65,19 +65,19 @@ export async function POST(
       ...(currency ? { currency } : {}),
     }
 
-    completionRecorded = await db.$transaction(async (tx) => {
-      const updated = await tx.order.updateMany({
-        where: {
-          flotRequestId,
-          merchantId: merchant.id,
-          status: { not: "COMPLETED" },
-        },
-        data: completedData,
-      })
-      if (updated.count > 0) return true
-
+    const updated = await db.order.updateMany({
+      where: {
+        flotRequestId,
+        merchantId: merchant.id,
+        status: { not: "COMPLETED" },
+      },
+      data: completedData,
+    })
+    if (updated.count > 0) {
+      completionRecorded = true
+    } else {
       try {
-        await tx.order.create({
+        await db.order.create({
           data: {
             merchantId: merchant.id,
             orderId,
@@ -86,23 +86,14 @@ export async function POST(
             rawPayload: body,
           },
         })
-        return true
+        completionRecorded = true
       } catch (error) {
+        // A simultaneous delivery may create this globally unique request ID
+        // first. Treat that as an already-recorded event without querying an
+        // aborted transaction or modifying another merchant's payment.
         if (!isUniqueViolation(error)) throw error
-
-        // A concurrent delivery may have created this event. Only update the
-        // matching merchant's transaction; never use the globally-unique
-        // request id to touch another merchant's record.
-        const existing = await tx.order.findFirst({
-          where: { flotRequestId, merchantId: merchant.id },
-          select: { id: true },
-        })
-        if (!existing) throw error
-
-        await tx.order.update({ where: { id: existing.id }, data: completedData })
-        return false
       }
-    })
+    }
 
     if (completionRecorded) {
       // Link to the most recent unmatched customer order from this merchant (within 30 min)
